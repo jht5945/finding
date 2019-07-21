@@ -24,11 +24,11 @@ fn check_path(path: &Path) {
     //println!("-------------- {:?} {}", path, path.is_dir());
 }
 
-fn list_dir(dir: &Path, fnc: fn(&Path) -> ()) -> XResult<()> {
+fn list_dir<F>(dir: &Path, fnc: &F) -> XResult<()> where F: Fn(&Path) -> () {
     list_dir_with_depth_check(&mut 0u32, dir, fnc)
 }
 
-fn list_dir_with_depth_check(depth: &mut u32, dir: &Path, fnc: fn(&Path) -> ()) -> XResult<()> {
+fn list_dir_with_depth_check<F>(depth: &mut u32, dir: &Path, fnc: &F) -> XResult<()> where F: Fn(&Path) -> () {
     if *depth > 100u32 {
         // TODO error: return Err(Box::new("depth"));
     }
@@ -76,7 +76,8 @@ fn main() {
     println!("{:?}", get_absolute_path("~/.jssp"));
     println!("{:?}", get_absolute_path("~/.jsspx"));
 
-    list_dir(get_absolute_path("~").unwrap().as_path(), check_path).ok();
+    //list_dir(get_absolute_path("~").unwrap().as_path(), &check_path).ok();
+    list_dir(get_absolute_path("~").unwrap().as_path(), &|_| {}).ok();
 
     println!("Hello, world!");
 }
