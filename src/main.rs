@@ -53,7 +53,7 @@ fn main() {
                 },
                 Ok(bytes) => bytes as u64,
             };
-            walk_dir(&dir_path, &|_, _| () /* do not process error */, &|p| {
+            walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| {
                 match p.metadata() {
                     Err(_) => (),
                     Ok(metadata) => {
