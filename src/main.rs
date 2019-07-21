@@ -46,7 +46,7 @@ fn main() {
     println!("{:?}", get_absolute_path("~/.jsspx"));
 
 
-    walk_dir(get_home_path().unwrap().as_path(), &|_, _| {}, &|p| println!("{:?}",p), &|_| false).unwrap();
+    walk_dir(get_home_path().unwrap().as_path(), &|_, _| (), &|p| println!("{:?}",p), &|_| false).unwrap();
 
     println!("Hello, world!");
 }
