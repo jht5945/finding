@@ -1,0 +1,9 @@
+[package]
+name = "finding"
+version = "0.1.0"
+authors = ["Hatter Jiang <jht5945@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+argparse = "0.2.2"
+rust_util = { git = "https://github.com/jht5945/rust_util" }
