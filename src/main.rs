@@ -46,7 +46,7 @@ fn main() {
     };
     match target.as_str() {
         "huge" | "hugefile" => {
-            walk_dir(&dir_path, &|_, _| (), &|p| {
+            walk_dir(&dir_path, &|_, _| () /* do not process error */, &|p| {
                 match p.metadata() {
                     Err(_) => (),
                     Ok(metadata) => {
