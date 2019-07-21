@@ -64,7 +64,7 @@ fn main() {
                                 Some(p_str) => {
                                     print_lastline("");
                                     print_message(MessageType::OK, &format!("{} [{}]", p_str, get_display_size(len as i64)));
-                                }
+                                },
                             }
                         }
                     },
