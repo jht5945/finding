@@ -46,15 +46,26 @@ fn main() {
     };
     match target.as_str() {
         "huge" | "hugefile" => {
+            let huge_file_size_bytes = match parse_size(&huge_file_size) {
+                Err(err) => {
+                    print_message(MessageType::ERROR, &format!("Parse size failed: {}", err));
+                    return;
+                },
+                Ok(bytes) => bytes as u64,
+            };
             walk_dir(&dir_path, &|_, _| () /* do not process error */, &|p| {
                 match p.metadata() {
                     Err(_) => (),
                     Ok(metadata) => {
                         let len = metadata.len();
-                        if len > 100 * 1024 * 1024 {
-                            print_lastline("");
-                            //println!();
-                            print_message(MessageType::OK, &format!("{:?}: {}", p, get_display_size(len as i64)));
+                        if len >= huge_file_size_bytes {
+                            match p.to_str() {
+                                None => (),
+                                Some(p_str) => {
+                                    print_lastline("");
+                                    print_message(MessageType::OK, &format!("{} [{}]", p_str, get_display_size(len as i64)));
+                                }
+                            }
                         }
                     },
                 }
@@ -65,6 +76,7 @@ fn main() {
                 }
                 true
             }).unwrap_or(());
+            print_lastline("");
             return;
         },
         _ => (),
