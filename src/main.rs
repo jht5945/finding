@@ -18,11 +18,13 @@ Written by Hatter Jiang
 fn main() {
     let mut version = false;
     let mut huge_file_size = String::from("100M");
+    let mut dir = String::new();
     {
         let mut ap = ArgumentParser::new();
         ap.set_description("finding - command line find tool.");
         ap.refer(&mut huge_file_size).add_option(&["--huge-file"], Store, "Huge file size, default 100M");
         ap.refer(&mut version).add_option(&["-v", "--version"], StoreTrue, "Print version");
+        ap.refer(&mut dir).add_argument("DIR", Store, "Dir name, default current dir(.)");
         ap.parse_args_or_exit();
     }
     
