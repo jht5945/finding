@@ -58,6 +58,7 @@ fn main() {
     let mut target = String::from("text");
     let mut huge_file_size = String::from("100M");
     let mut dir = String::from(".");
+    let mut search_text = String::new();
     {
         let mut ap = ArgumentParser::new();
         ap.set_description("finding - command line find tool.");
@@ -65,7 +66,7 @@ fn main() {
         ap.refer(&mut dir).add_option(&["-d", "--dir"], Store, "Target directory, default current dir(.)");
         ap.refer(&mut huge_file_size).add_option(&["--huge-file"], Store, "Huge file size, default 100M");
         ap.refer(&mut version).add_option(&["-v", "--version"], StoreTrue, "Print version");
-        //ap.refer(&mut dir).add_argument("DIR", Store, "Dir name, default current dir(.)");
+        ap.refer(&mut search_text).add_argument("SEARCH TEXT", Store, "Search text");
         ap.parse_args_or_exit();
     }
     
