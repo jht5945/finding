@@ -21,7 +21,7 @@ fn main() {
     let mut version = false;
     let mut target = String::from("text");
     let mut huge_file_size = String::from("100M");
-    let mut dir = String::new();
+    let mut dir = String::from(".");
     {
         let mut ap = ArgumentParser::new();
         ap.set_description("finding - command line find tool.");
@@ -35,6 +35,39 @@ fn main() {
     if version {
         print_version();
         return;
+    }
+
+    let dir_path = match get_absolute_path(&dir) {
+        None => {
+            print_message(MessageType::ERROR, &format!("Cannot find dir: {}", dir));
+            return;
+        },
+        Some(path) => path,
+    };
+    match target.as_str() {
+        "huge" | "hugefile" => {
+            walk_dir(&dir_path, &|_, _| (), &|p| {
+                match p.metadata() {
+                    Err(_) => (),
+                    Ok(metadata) => {
+                        let len = metadata.len();
+                        if len > 100 * 1024 * 1024 {
+                            print_lastline("");
+                            //println!();
+                            print_message(MessageType::OK, &format!("{:?}: {}", p, get_display_size(len as i64)));
+                        }
+                    },
+                }
+            }, &|p| {
+                match p.to_str() {
+                    None => (),
+                    Some(p_str) => print_lastline(&format!("Scanning: {}", p_str)),
+                }
+                true
+            }).unwrap_or(());
+            return;
+        },
+        _ => (),
     }
 
     // --------------------------------------------------------------------------------------------------------
