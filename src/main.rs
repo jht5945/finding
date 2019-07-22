@@ -20,6 +20,30 @@ Written by Hatter Jiang
 "#, VERSION);
 }
 
+fn get_term_width() -> Option<usize> {
+    match term_size::dimensions() {
+        None => None,
+        Some((w, _h)) => Some(w),
+    }
+}
+
+fn get_term_width_message(message: &str, left: usize) -> String {
+    match get_term_width() {
+        None => message.to_string(),
+        Some(w) => {
+            let len = message.len();
+            if w > len {
+               return message.to_string();
+            }
+            let mut s = String::new();
+            s.push_str(&message[0..w-10-5-left]);
+            s.push_str("[...]");
+            s.push_str(&message[len-10..]);
+            s
+        },
+    }
+}
+
 fn find_huge_files(huge_file_size: &String, dir_path: &Path) {
     let huge_file_size_bytes = match parse_size(&huge_file_size) {
         Err(err) => {
@@ -47,18 +71,11 @@ fn find_huge_files(huge_file_size: &String, dir_path: &Path) {
     }, &|p| {
         match p.to_str() {
             None => (),
-            Some(p_str) => print_lastline(&format!("Scanning: {}", p_str)),
+            Some(p_str) => print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10)),
         }
         true
     }).unwrap_or(());
     print_lastline("");
-}
-
-fn get_term_width() -> Option<usize> {
-    match term_size::dimensions() {
-        None => None,
-        Some((w, _h)) => Some(w),
-    }
 }
 
 fn main() {
