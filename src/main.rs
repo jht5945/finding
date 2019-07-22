@@ -1,4 +1,5 @@
 extern crate argparse;
+extern crate term_size;
 extern crate rust_util;
 
 use std::{
@@ -51,6 +52,13 @@ fn find_huge_files(huge_file_size: &String, dir_path: &Path) {
         true
     }).unwrap_or(());
     print_lastline("");
+}
+
+fn get_term_width() -> Option<usize> {
+    match term_size::dimensions() {
+        None => None,
+        Some((w, _h)) => Some(w),
+    }
 }
 
 fn main() {
