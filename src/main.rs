@@ -98,6 +98,82 @@ fn read_file_content(file: &Path, large_file_len: u64) -> XResult<String> {
     Ok(content)
 }
 
+#[derive(Debug)]
+struct MatchLine {
+    line_number: usize,
+    line_string: String,
+}
+
+impl MatchLine {
+    fn new(l_no: usize, l_str: String) -> MatchLine {
+        MatchLine {
+            line_number: l_no,
+            line_string: l_str,
+        }
+    }
+}
+
+fn match_lines(tag: &str, content: &String, search_text: &String) {
+    let lines = content.lines();
+    let mut match_lines_vec = vec![];
+    let mut l_no = 0usize;
+    for ln in lines {
+        if ln.contains(search_text) {
+            match_lines_vec.push(MatchLine::new(l_no, ln.to_string()));
+        }
+        l_no += 1;
+    }
+
+    if match_lines_vec.len() > 0 {
+        print_lastline("");
+        print_message(MessageType::OK, &format!("Find in {}:", tag));
+        for i in 0..match_lines_vec.len() {
+            println!("{}: {}", match_lines_vec[i].line_number + 1, match_lines_vec[i].line_string);
+        }
+    }
+}
+
+fn find_text_files(large_text_file_size: &String, dir_path: &Path, search_text: &String) {
+    if search_text.len() < 1 {
+        print_message(MessageType::ERROR, "Param searc_text cannot be empty.");
+        return;
+    }
+    let large_text_file_size_bytes = match parse_size(&large_text_file_size) {
+        Err(err) => {
+            print_message(MessageType::ERROR, &format!("Parse size failed: {}", err));
+            return;
+        },
+        Ok(bytes) => bytes as u64,
+    };
+    walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| {
+        let p_str = match p.to_str() {
+            None => return,
+            Some(s) => s,
+        };
+        let file_content = match read_file_content(p, large_text_file_size_bytes) {
+            Err(_err) => {
+                // TODO ... print_message(MessageType::ERROR, &format!("Read file {} failed: {}", p_str, err));
+                return;
+            },
+            Ok(c) => c,
+        };
+        match_lines(p_str, &file_content, search_text);
+    }, &|p| {
+        match p.to_str() {
+            None => (),
+            Some(p_str) => {
+                if p_str.ends_with("/.git") {
+                    return false;
+                }
+                print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10))
+            },
+        }
+        true
+    }).unwrap_or(());
+    print_lastline("");
+}
+
+
 fn main() {
     let mut version = false;
     let mut target = String::from("text");
@@ -131,6 +207,7 @@ fn main() {
     };
     match target.as_str() {
         "huge" | "hugefile" => find_huge_files(&huge_file_size, &dir_path),
+        "text" => find_text_files(&large_text_file_size, &dir_path, &search_text),
         unknown => print_message(MessageType::ERROR, &format!("Unknown command: {}", unknown)),
     }
 }
