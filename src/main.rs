@@ -1,4 +1,5 @@
 extern crate argparse;
+extern crate term;
 extern crate term_size;
 extern crate rust_util;
 
@@ -128,14 +129,22 @@ fn match_lines(tag: &str, content: &String, search_text: &String) {
         print_lastline("");
         print_message(MessageType::OK, &format!("Find in {}:", tag));
         for i in 0..match_lines_vec.len() {
-            println!("{}: {}", match_lines_vec[i].line_number + 1, match_lines_vec[i].line_string);
+            print!("{}: ", match_lines_vec[i].line_number + 1);
+            let ss: Vec<&str> = match_lines_vec[i].line_string.split(search_text).collect();
+            for j in 0..ss.len() {
+                print!("{}", ss[j]);
+                if j < ss.len() -1 {
+                    print_color(Some(term::color::RED), true, search_text);
+                }
+            }
+            println!();
         }
     }
 }
 
 fn find_text_files(large_text_file_size: &String, dir_path: &Path, search_text: &String) {
     if search_text.len() < 1 {
-        print_message(MessageType::ERROR, "Param searc_text cannot be empty.");
+        print_message(MessageType::ERROR, "Param search_text cannot be empty.");
         return;
     }
     let large_text_file_size_bytes = match parse_size(&large_text_file_size) {

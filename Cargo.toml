@@ -6,5 +6,6 @@ edition = "2018"
 
 [dependencies]
 argparse = "0.2.2"
+term = "0.5.2"
 term_size = "0.3.1"
 rust_util = { git = "https://github.com/jht5945/rust_util" }
