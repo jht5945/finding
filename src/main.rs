@@ -3,7 +3,9 @@ extern crate term_size;
 extern crate rust_util;
 
 use std::{
+    fs::File,
     path::Path,
+    io::prelude::*,
 };
 
 use argparse::{ArgumentParser, StoreTrue, Store};
@@ -78,10 +80,29 @@ fn find_huge_files(huge_file_size: &String, dir_path: &Path) {
     print_lastline("");
 }
 
+fn read_file_content(file: &Path, large_file_len: u64) -> XResult<String> {
+    if ! file.exists() {
+        return Err(new_box_error(&format!("File not exists: {:?}", file)));
+    }
+    if ! file.is_file() {
+        return Err(new_box_error(&format!("File is not file: {:?}", file)));
+    }
+    let file_len = file.metadata()?.len();
+    if file_len > large_file_len {
+        return Err(new_box_error(&format!("File too large: {:?}, len: {}", file, file_len)));
+    }
+    let mut f = File::open(file)?;
+    let mut content = String::new();
+    f.read_to_string(&mut content)?;
+
+    Ok(content)
+}
+
 fn main() {
     let mut version = false;
     let mut target = String::from("text");
     let mut huge_file_size = String::from("100M");
+    let mut large_text_file_size = String::from("10M");
     let mut dir = String::from(".");
     let mut search_text = String::new();
     {
@@ -90,6 +111,7 @@ fn main() {
         ap.refer(&mut target).add_option(&["-t", "--target"], Store, "Target, text, huge[file], default text");
         ap.refer(&mut dir).add_option(&["-d", "--dir"], Store, "Target directory, default current dir(.)");
         ap.refer(&mut huge_file_size).add_option(&["--huge-file"], Store, "Huge file size, default 100M");
+        ap.refer(&mut large_text_file_size).add_option(&["--large-text-file"], Store, "Large text file, default 10M");
         ap.refer(&mut version).add_option(&["-v", "--version"], StoreTrue, "Print version");
         ap.refer(&mut search_text).add_argument("SEARCH TEXT", Store, "Search text");
         ap.parse_args_or_exit();
