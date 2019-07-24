@@ -30,6 +30,18 @@ fn get_term_width() -> Option<usize> {
     }
 }
 
+// thanks https://blog.csdn.net/star_xiong/article/details/89401149
+fn find_char_boundary(s: &str, index: usize) -> usize {
+    if s.len() <= index {
+        return index;
+    }
+    let mut new_index = index;
+    while !s.is_char_boundary(new_index) {
+        new_index += 1;
+    }
+    new_index
+}
+
 fn get_term_width_message(message: &str, left: usize) -> String {
     match get_term_width() {
         None => message.to_string(),
@@ -39,9 +51,9 @@ fn get_term_width_message(message: &str, left: usize) -> String {
                return message.to_string();
             }
             let mut s = String::new();
-            s.push_str(&message[0..w-10-5-left]);
+            s.push_str(&message[0..find_char_boundary(&message, w-10-5-left)]);
             s.push_str("[...]");
-            s.push_str(&message[len-10..]);
+            s.push_str(&message[find_char_boundary(&message, len-10)..]);
             s
         },
     }
