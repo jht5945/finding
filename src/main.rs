@@ -142,11 +142,17 @@ fn match_lines(tag: &str, content: &String, search_text: &String) {
     }
 }
 
-fn find_text_files(large_text_file_size: &String, dir_path: &Path, search_text: &String) {
+fn find_text_files(large_text_file_size: &String, dir_path: &Path, file_ext: &String, search_text: &String) {
     if search_text.len() < 1 {
         print_message(MessageType::ERROR, "Param search_text cannot be empty.");
         return;
     }
+    let file_exts = match file_ext.as_str() {
+        "" => vec![],
+        ext => {
+            ext.split(",").map(|s| s.trim()).filter(|s| s.len() > 0).map(|s| String::from(".") + s).collect()
+        },
+    };
     let large_text_file_size_bytes = match parse_size(&large_text_file_size) {
         Err(err) => {
             print_message(MessageType::ERROR, &format!("Parse size failed: {}", err));
@@ -159,6 +165,18 @@ fn find_text_files(large_text_file_size: &String, dir_path: &Path, search_text: 
             None => return,
             Some(s) => s,
         };
+        if file_exts.len() > 0 {
+            let mut file_ext_matches = false;
+            for i in 0..file_exts.len() {
+                if p_str.to_lowercase().ends_with(&file_exts[i]) {
+                    file_ext_matches = true;
+                    break;
+                }
+            }
+            if ! file_ext_matches {
+                return;
+            }
+        }
         let file_content = match read_file_content(p, large_text_file_size_bytes) {
             Err(_err) => {
                 // TODO ... print_message(MessageType::ERROR, &format!("Read file {} failed: {}", p_str, err));
@@ -189,6 +207,7 @@ fn main() {
     let mut huge_file_size = String::from("100M");
     let mut large_text_file_size = String::from("10M");
     let mut dir = String::from(".");
+    let mut file_ext = String::from("");
     let mut search_text = String::new();
     {
         let mut ap = ArgumentParser::new();
@@ -197,6 +216,7 @@ fn main() {
         ap.refer(&mut dir).add_option(&["-d", "--dir"], Store, "Target directory, default current dir(.)");
         ap.refer(&mut huge_file_size).add_option(&["--huge-file"], Store, "Huge file size, default 100M");
         ap.refer(&mut large_text_file_size).add_option(&["--large-text-file"], Store, "Large text file, default 10M");
+        ap.refer(&mut file_ext).add_option(&["-f", "--file-ext"], Store, "File ext, default all");
         ap.refer(&mut version).add_option(&["-v", "--version"], StoreTrue, "Print version");
         ap.refer(&mut search_text).add_argument("SEARCH TEXT", Store, "Search text");
         ap.parse_args_or_exit();
@@ -216,7 +236,7 @@ fn main() {
     };
     match target.as_str() {
         "huge" | "hugefile" => find_huge_files(&huge_file_size, &dir_path),
-        "text" => find_text_files(&large_text_file_size, &dir_path, &search_text),
+        "text" => find_text_files(&large_text_file_size, &dir_path, &file_ext, &search_text),
         unknown => print_message(MessageType::ERROR, &format!("Unknown command: {}", unknown)),
     }
 }
