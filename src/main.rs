@@ -7,6 +7,7 @@ use std::{
     fs::File,
     path::Path,
     io::prelude::*,
+    time::SystemTime,
 };
 
 use argparse::{ArgumentParser, StoreTrue, Store};
@@ -126,12 +127,20 @@ impl MatchLine {
     }
 }
 
-fn match_lines(tag: &str, content: &String, search_text: &String) {
+fn match_lines(tag: &str, content: &String, ignore_case: bool, search_text: &String) {
     let lines = content.lines();
     let mut match_lines_vec = vec![];
     let mut l_no = 0usize;
+    let the_search_text = &match ignore_case {
+        true => search_text.to_lowercase(),
+        false => search_text.to_string(),
+    };
     for ln in lines {
-        if ln.contains(search_text) {
+        let matches = match ignore_case {
+            true => ln.to_lowercase().contains(the_search_text),
+            false => ln.contains(the_search_text),
+        };
+        if matches {
             match_lines_vec.push(MatchLine::new(l_no, ln.to_string()));
         }
         l_no += 1;
@@ -142,22 +151,30 @@ fn match_lines(tag: &str, content: &String, search_text: &String) {
         print_message(MessageType::OK, &format!("Find in {}:", tag));
         for i in 0..match_lines_vec.len() {
             print!("{}: ", match_lines_vec[i].line_number + 1);
-            let ss: Vec<&str> = match_lines_vec[i].line_string.split(search_text).collect();
-            for j in 0..ss.len() {
-                print!("{}", ss[j]);
-                if j < ss.len() -1 {
-                    print_color(Some(term::color::RED), true, search_text);
-                }
+            match ignore_case {
+                true => println!("{}", match_lines_vec[i].line_string),
+                false => {
+                    let ss: Vec<&str> = match_lines_vec[i].line_string.split(search_text).collect();
+                    for j in 0..ss.len() {
+                        print!("{}", ss[j]);
+                        if j < ss.len() -1 {
+                            print_color(Some(term::color::RED), true, search_text);
+                        }
+                    }
+                    println!();
+                },
             }
-            println!();
         }
     }
 }
 
-fn find_text_files(large_text_file_size: &String, dir_path: &Path, file_ext: &String, search_text: &String) {
+fn find_text_files(large_text_file_size: &String, dir_path: &Path, file_ext: &String, ignore_case: bool, search_text: &String) {
     if search_text.len() < 1 {
         print_message(MessageType::ERROR, "Param search_text cannot be empty.");
         return;
+    }
+    if ignore_case {
+        print_message(MessageType::WARN, "Using ignore case mode, highlight print is disabled.");
     }
     let file_exts = match file_ext.as_str() {
         "" => vec![],
@@ -196,7 +213,7 @@ fn find_text_files(large_text_file_size: &String, dir_path: &Path, file_ext: &St
             },
             Ok(c) => c,
         };
-        match_lines(p_str, &file_content, search_text);
+        match_lines(p_str, &file_content, ignore_case, search_text);
     }, &|p| {
         match p.to_str() {
             None => (),
@@ -215,6 +232,7 @@ fn find_text_files(large_text_file_size: &String, dir_path: &Path, file_ext: &St
 
 fn main() {
     let mut version = false;
+    let mut ignore_case = false;
     let mut target = String::from("text");
     let mut huge_file_size = String::from("100M");
     let mut large_text_file_size = String::from("10M");
@@ -229,6 +247,7 @@ fn main() {
         ap.refer(&mut huge_file_size).add_option(&["--huge-file"], Store, "Huge file size, default 100M");
         ap.refer(&mut large_text_file_size).add_option(&["--large-text-file"], Store, "Large text file, default 10M");
         ap.refer(&mut file_ext).add_option(&["-f", "--file-ext"], Store, "File ext, default all");
+        ap.refer(&mut ignore_case).add_option(&["-i", "--ignore-case"], StoreTrue, "Ignore case, default false");
         ap.refer(&mut version).add_option(&["-v", "--version"], StoreTrue, "Print version");
         ap.refer(&mut search_text).add_argument("SEARCH TEXT", Store, "Search text");
         ap.parse_args_or_exit();
@@ -246,9 +265,15 @@ fn main() {
         },
         Some(path) => path,
     };
+    let start = SystemTime::now();
     match target.as_str() {
         "huge" | "hugefile" => find_huge_files(&huge_file_size, &dir_path),
-        "text" => find_text_files(&large_text_file_size, &dir_path, &file_ext, &search_text),
-        unknown => print_message(MessageType::ERROR, &format!("Unknown command: {}", unknown)),
+        "text" => find_text_files(&large_text_file_size, &dir_path, &file_ext, ignore_case, &search_text),
+        unknown => {
+            print_message(MessageType::ERROR, &format!("Unknown command: {}", unknown));
+            return;
+        },
     }
+    let cost_millis = SystemTime::now().duration_since(start.clone()).unwrap().as_millis();
+    print_message(MessageType::OK, &format!("Finding finished, cost {} ms", cost_millis));
 }
