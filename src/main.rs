@@ -60,8 +60,8 @@ fn get_term_width_message(message: &str, left: usize) -> String {
     }
 }
 
-fn find_huge_files(huge_file_size: &String, dir_path: &Path) {
-    let huge_file_size_bytes = match parse_size(&huge_file_size) {
+fn find_huge_files(options: &Options, dir_path: &Path) {
+    let huge_file_size_bytes = match parse_size(&options.huge_file_size) {
         Err(err) => {
             print_message(MessageType::ERROR, &format!("Parse size failed: {}", err));
             return;
@@ -168,21 +168,21 @@ fn match_lines(tag: &str, content: &String, ignore_case: bool, search_text: &Str
     }
 }
 
-fn find_text_files(large_text_file_size: &String, dir_path: &Path, file_ext: &String, ignore_case: bool, search_text: &String) {
-    if search_text.len() < 1 {
+fn find_text_files(options: &Options, dir_path: &Path) {
+    if options.search_text.len() < 1 {
         print_message(MessageType::ERROR, "Param search_text cannot be empty.");
         return;
     }
-    if ignore_case {
+    if options.ignore_case {
         print_message(MessageType::WARN, "Using ignore case mode, highlight print is disabled.");
     }
-    let file_exts = match file_ext.as_str() {
+    let file_exts = match options.file_ext.as_str() {
         "" => vec![],
         ext => {
             ext.split(",").map(|s| s.trim()).filter(|s| s.len() > 0).map(|s| String::from(".") + s).collect()
         },
     };
-    let large_text_file_size_bytes = match parse_size(&large_text_file_size) {
+    let large_text_file_size_bytes = match parse_size(&options.large_text_file_size) {
         Err(err) => {
             print_message(MessageType::ERROR, &format!("Parse size failed: {}", err));
             return;
@@ -213,7 +213,7 @@ fn find_text_files(large_text_file_size: &String, dir_path: &Path, file_ext: &St
             },
             Ok(c) => c,
         };
-        match_lines(p_str, &file_content, ignore_case, search_text);
+        match_lines(p_str, &file_content, options.ignore_case, &options.search_text);
     }, &|p| {
         match p.to_str() {
             None => (),
@@ -229,46 +229,58 @@ fn find_text_files(large_text_file_size: &String, dir_path: &Path, file_ext: &St
     print_lastline("");
 }
 
+struct Options {
+    version: bool,
+    target: String,
+    huge_file_size: String,
+    large_text_file_size: String,
+    dir: String,
+    file_ext: String,
+    ignore_case: bool,
+    search_text: String,
+}
 
 fn main() {
-    let mut version = false;
-    let mut ignore_case = false;
-    let mut target = String::from("text");
-    let mut huge_file_size = String::from("100M");
-    let mut large_text_file_size = String::from("10M");
-    let mut dir = String::from(".");
-    let mut file_ext = String::from("");
-    let mut search_text = String::new();
+    let mut options = Options {
+        version: false,
+        target: String::from("text"),
+        huge_file_size: String::from("100M"),
+        large_text_file_size: String::from("10M"),
+        file_ext: String::new(),
+        ignore_case: false,
+        dir: String::from("."),
+        search_text: String::new(),
+    };
     {
         let mut ap = ArgumentParser::new();
         ap.set_description("finding - command line find tool.");
-        ap.refer(&mut target).add_option(&["-t", "--target"], Store, "Target, text, huge[file], default text");
-        ap.refer(&mut dir).add_option(&["-d", "--dir"], Store, "Target directory, default current dir(.)");
-        ap.refer(&mut huge_file_size).add_option(&["--huge-file"], Store, "Huge file size, default 100M");
-        ap.refer(&mut large_text_file_size).add_option(&["--large-text-file"], Store, "Large text file, default 10M");
-        ap.refer(&mut file_ext).add_option(&["-f", "--file-ext"], Store, "File ext, default all");
-        ap.refer(&mut ignore_case).add_option(&["-i", "--ignore-case"], StoreTrue, "Ignore case, default false");
-        ap.refer(&mut version).add_option(&["-v", "--version"], StoreTrue, "Print version");
-        ap.refer(&mut search_text).add_argument("SEARCH TEXT", Store, "Search text");
+        ap.refer(&mut options.target).add_option(&["-t", "--target"], Store, "Target, text, huge[file], default text");
+        ap.refer(&mut options.dir).add_option(&["-d", "--dir"], Store, "Target directory, default current dir(.)");
+        ap.refer(&mut options.huge_file_size).add_option(&["--huge-file"], Store, "Huge file size, default 100M");
+        ap.refer(&mut options.large_text_file_size).add_option(&["--large-text-file"], Store, "Large text file, default 10M");
+        ap.refer(&mut options.file_ext).add_option(&["-f", "--file-ext"], Store, "File ext, default all");
+        ap.refer(&mut options.ignore_case).add_option(&["-i", "--ignore-case"], StoreTrue, "Ignore case, default false");
+        ap.refer(&mut options.version).add_option(&["-v", "--version"], StoreTrue, "Print version");
+        ap.refer(&mut options.search_text).add_argument("SEARCH TEXT", Store, "Search text");
         ap.parse_args_or_exit();
     }
     
-    if version {
+    if options.version {
         print_version();
         return;
     }
 
-    let dir_path = match get_absolute_path(&dir) {
+    let dir_path = match get_absolute_path(&options.dir) {
         None => {
-            print_message(MessageType::ERROR, &format!("Cannot find dir: {}", dir));
+            print_message(MessageType::ERROR, &format!("Cannot find dir: {}", options.dir));
             return;
         },
         Some(path) => path,
     };
     let start = SystemTime::now();
-    match target.as_str() {
-        "huge" | "hugefile" => find_huge_files(&huge_file_size, &dir_path),
-        "text" => find_text_files(&large_text_file_size, &dir_path, &file_ext, ignore_case, &search_text),
+    match options.target.as_str() {
+        "huge" | "hugefile" => find_huge_files(&options, &dir_path),
+        "text" => find_text_files(&options, &dir_path),
         unknown => {
             print_message(MessageType::ERROR, &format!("Unknown command: {}", unknown));
             return;
