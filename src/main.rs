@@ -131,12 +131,11 @@ impl MatchLine {
 }
 
 fn match_lines(tag: &str, content: &String, options: &Options) {
-    let ignore_case = options.ignore_case;
     let search_text = &options.search_text;
     let lines = content.lines();
     let mut match_lines_vec = vec![];
     let mut l_no = 0usize;
-    let the_search_text = &match ignore_case {
+    let the_search_text = &match options.ignore_case {
         true => search_text.to_lowercase(),
         false => search_text.to_string(),
     };
@@ -148,7 +147,7 @@ fn match_lines(tag: &str, content: &String, options: &Options) {
             }
             continue;
         }
-        let matches = match ignore_case {
+        let matches = match options.ignore_case {
             true => ln.to_lowercase().contains(the_search_text),
             false => ln.contains(the_search_text),
         };
@@ -163,7 +162,7 @@ fn match_lines(tag: &str, content: &String, options: &Options) {
         print_message(MessageType::OK, &format!("Find in {}:", tag));
         for i in 0..match_lines_vec.len() {
             print!("{}: ", match_lines_vec[i].line_number + 1);
-            match ignore_case {
+            match options.ignore_case {
                 true => println!("{}", match_lines_vec[i].line_string),
                 false => {
                     let ss: Vec<&str> = match_lines_vec[i].line_string.split(search_text).collect();
