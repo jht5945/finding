@@ -210,7 +210,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
         match p.to_str() {
             None => (),
             Some(p_str) => {
-                if p_str.ends_with("/.git") {
+                if (! options.scan_dot_git) && p_str.ends_with("/.git") {
                     return false;
                 }
                 print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10))
@@ -234,6 +234,7 @@ struct Options {
     filter_large_line: bool,
     large_line_size: String,
     parsed_large_line_size: u64,
+    scan_dot_git: bool,
     search_text: String,
 }
 
@@ -251,6 +252,7 @@ fn main() {
         filter_large_line: false,
         large_line_size: String::from("10KB"),
         parsed_large_line_size: 0u64,
+        scan_dot_git: false,
         search_text: String::new(),
     };
     {
@@ -264,6 +266,7 @@ fn main() {
         ap.refer(&mut options.ignore_case).add_option(&["-i", "--ignore-case"], StoreTrue, "Ignore case, default false");
         ap.refer(&mut options.filter_large_line).add_option(&["--filter-large-line"], StoreTrue, "Filter large line");
         ap.refer(&mut options.large_line_size).add_option(&["--large-line-size"], Store, "Large line, default 10KB");
+        ap.refer(&mut options.scan_dot_git).add_option(&["--scan-dot-git"], StoreTrue, "Scan dot git");
         ap.refer(&mut options.version).add_option(&["-v", "--version"], StoreTrue, "Print version");
         ap.refer(&mut options.search_text).add_argument("SEARCH TEXT", Store, "Search text");
         ap.parse_args_or_exit();
