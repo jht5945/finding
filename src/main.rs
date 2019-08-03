@@ -200,6 +200,8 @@ fn find_text_files(options: &Options, dir_path: &Path) {
     let total_file_count_cell = RefCell::new(0u64);
     let scaned_file_count_cell = RefCell::new(0u64);
     let matched_file_count_cell = RefCell::new(0u64);
+    let total_dir_count_cell = RefCell::new(0u64);
+    let scaned_dir_count_cell = RefCell::new(0u64);
     walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| {
         total_file_count_cell.replace_with(|&mut c| c + 1);
         let p_str = match p.to_str() {
@@ -233,6 +235,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
             matched_file_count_cell.replace_with(|&mut c| c + 1);
         }
     }, &|p| {
+        total_dir_count_cell.replace_with(|&mut c| c + 1);
         match p.to_str() {
             None => (),
             Some(p_str) => {
@@ -243,12 +246,16 @@ fn find_text_files(options: &Options, dir_path: &Path) {
                     }
                     return false;
                 }
+                scaned_dir_count_cell.replace_with(|&mut c| c + 1);
                 print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10))
             },
         }
         true
     }).unwrap_or(());
     print_lastline("");
+    print_message(MessageType::OK, &format!("Total dir count: {}, scaned dir count: {}",
+                                    total_dir_count_cell.into_inner(),
+                                    scaned_dir_count_cell.into_inner()));
     print_message(MessageType::OK, &format!("Total file count: {}, scaned file count: {}, matched file count: {}",
                                     total_file_count_cell.into_inner(),
                                     scaned_file_count_cell.into_inner(),
