@@ -4,6 +4,7 @@ extern crate term_size;
 extern crate rust_util;
 
 use std::{
+    cell::RefCell,
     fs::File,
     path::Path,
     io::prelude::*,
@@ -130,7 +131,7 @@ impl MatchLine {
     }
 }
 
-fn match_lines(tag: &str, content: &String, options: &Options) {
+fn match_lines(tag: &str, content: &String, options: &Options) -> bool {
     let search_text = &options.search_text;
     let lines = content.lines();
     let mut match_lines_vec = vec![];
@@ -157,6 +158,7 @@ fn match_lines(tag: &str, content: &String, options: &Options) {
         l_no += 1;
     }
 
+    let mut matches_any = false;
     if match_lines_vec.len() > 0 {
         print_lastline("");
         print_message(MessageType::OK, &format!("Find in {}:", tag));
@@ -176,7 +178,9 @@ fn match_lines(tag: &str, content: &String, options: &Options) {
                 },
             }
         }
+        matches_any = true;
     }
+    matches_any
 }
 
 fn find_text_files(options: &Options, dir_path: &Path) {
@@ -193,7 +197,11 @@ fn find_text_files(options: &Options, dir_path: &Path) {
             ext.split(",").map(|s| s.trim()).filter(|s| s.len() > 0).map(|s| String::from(".") + s).collect()
         },
     };
+    let total_file_count_cell = RefCell::new(0u64);
+    let scaned_file_count_cell = RefCell::new(0u64);
+    let matched_file_count_cell = RefCell::new(0u64);
     walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| {
+        total_file_count_cell.replace_with(|&mut c| c + 1);
         let p_str = match p.to_str() {
             None => return,
             Some(s) => s,
@@ -220,7 +228,10 @@ fn find_text_files(options: &Options, dir_path: &Path) {
             },
             Ok(c) => c,
         };
-        match_lines(p_str, &file_content, &options);
+        scaned_file_count_cell.replace_with(|&mut c| c + 1);
+        if match_lines(p_str, &file_content, &options) {
+            matched_file_count_cell.replace_with(|&mut c| c + 1);
+        }
     }, &|p| {
         match p.to_str() {
             None => (),
@@ -238,6 +249,10 @@ fn find_text_files(options: &Options, dir_path: &Path) {
         true
     }).unwrap_or(());
     print_lastline("");
+    print_message(MessageType::OK, &format!("Total file count: {}, scaned file count: {}, matched file count: {}",
+                                    total_file_count_cell.into_inner(),
+                                    scaned_file_count_cell.into_inner(),
+                                    matched_file_count_cell.into_inner()));
 }
 
 struct Options {
