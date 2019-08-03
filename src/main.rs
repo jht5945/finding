@@ -63,7 +63,11 @@ fn get_term_width_message(message: &str, left: usize) -> String {
 }
 
 fn find_huge_files(options: &Options, dir_path: &Path) {
+    let total_file_count_cell = RefCell::new(0u64);
+    let huge_file_count_cell = RefCell::new(0u64);
+    let huge_file_size_cell = RefCell::new(0u64);
     walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| {
+        total_file_count_cell.replace_with(|&mut c| c + 1);
         match p.metadata() {
             Err(err) => {
                 if options.verbose {
@@ -78,6 +82,8 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
             Ok(metadata) => {
                 let len = metadata.len();
                 if len >= options.parsed_huge_file_size {
+                    huge_file_count_cell.replace_with(|&mut c| c + 1);
+                    huge_file_size_cell.replace_with(|&mut c| c + len);
                     match p.to_str() {
                         None => (),
                         Some(p_str) => {
@@ -91,11 +97,24 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
     }, &|p| {
         match p.to_str() {
             None => (),
-            Some(p_str) => print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10)),
+            Some(p_str) => {
+                if options.skip_link_dir && is_symlink(p) {
+                    if options.verbose {
+                        print_lastline("");
+                        print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str));
+                    }
+                    return false;
+                }
+                print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10))
+            },
         }
         true
     }).unwrap_or(());
     print_lastline("");
+    print_message(MessageType::OK, &format!("Total file count: {}, huge file count: {}, huge file size: {}",
+                                    total_file_count_cell.into_inner(),
+                                    huge_file_count_cell.into_inner(),
+                                    huge_file_size_cell.into_inner()))
 }
 
 fn read_file_content(file: &Path, large_file_len: u64) -> XResult<String> {
@@ -246,6 +265,13 @@ fn find_text_files(options: &Options, dir_path: &Path) {
                     }
                     return false;
                 }
+                if options.skip_link_dir && is_symlink(p) {
+                    if options.verbose {
+                        print_lastline("");
+                        print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str));
+                    }
+                    return false;
+                }
                 scaned_dir_count_cell.replace_with(|&mut c| c + 1);
                 print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10))
             },
@@ -276,6 +302,7 @@ struct Options {
     large_line_size: String,
     parsed_large_line_size: u64,
     scan_dot_git: bool,
+    skip_link_dir: bool,
     verbose: bool,
     search_text: String,
 }
@@ -295,6 +322,7 @@ fn main() {
         large_line_size: String::from("10KB"),
         parsed_large_line_size: 0u64,
         scan_dot_git: false,
+        skip_link_dir: false,
         verbose: false,
         search_text: String::new(),
     };
@@ -310,6 +338,7 @@ fn main() {
         ap.refer(&mut options.filter_large_line).add_option(&["--filter-large-line"], StoreTrue, "Filter large line");
         ap.refer(&mut options.large_line_size).add_option(&["--large-line-size"], Store, "Large line, default 10KB");
         ap.refer(&mut options.scan_dot_git).add_option(&["--scan-dot-git"], StoreTrue, "Scan dot git");
+        ap.refer(&mut options.skip_link_dir).add_option(&["--skip-link-dir"], StoreTrue, "Skip link dir");
         ap.refer(&mut options.version).add_option(&["-v", "--version"], StoreTrue, "Print version");
         ap.refer(&mut options.verbose).add_option(&["--verbose"], StoreTrue, "Verbose");
         ap.refer(&mut options.search_text).add_argument("SEARCH TEXT", Store, "Search text");
