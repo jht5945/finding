@@ -4,17 +4,17 @@ extern crate term_size;
 extern crate rust_util;
 
 mod opt;
+mod local_util;
 
 use std::{
     cell::RefCell,
-    fs::File,
     path::Path,
-    io::prelude::*,
     time::SystemTime,
 };
 
 use opt::*;
 use rust_util::*;
+use local_util::*;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const GIT_HASH: &str = env!("GIT_HASH");
@@ -26,42 +26,6 @@ License MIT <https://opensource.org/licenses/MIT>
 
 Written by Hatter Jiang
 "#, VERSION, &GIT_HASH[0..7]);
-}
-
-fn get_term_width() -> Option<usize> {
-    match term_size::dimensions() {
-        None => None,
-        Some((w, _h)) => Some(w),
-    }
-}
-
-// thanks https://blog.csdn.net/star_xiong/article/details/89401149
-fn find_char_boundary(s: &str, index: usize) -> usize {
-    if s.len() <= index {
-        return index;
-    }
-    let mut new_index = index;
-    while !s.is_char_boundary(new_index) {
-        new_index += 1;
-    }
-    new_index
-}
-
-fn get_term_width_message(message: &str, left: usize) -> String {
-    match get_term_width() {
-        None => message.to_string(),
-        Some(w) => {
-            let len = message.len();
-            if w > len {
-               return message.to_string();
-            }
-            let mut s = String::new();
-            s.push_str(&message[0..find_char_boundary(&message, w-10-5-left)]);
-            s.push_str("[...]");
-            s.push_str(&message[find_char_boundary(&message, len-10)..]);
-            s
-        },
-    }
 }
 
 fn find_huge_files(options: &Options, dir_path: &Path) {
@@ -119,23 +83,6 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
                                     get_display_size(huge_file_size_cell.into_inner() as i64)));
 }
 
-fn read_file_content(file: &Path, large_file_len: u64) -> XResult<String> {
-    if ! file.exists() {
-        return Err(new_box_error(&format!("File not exists: {:?}", file)));
-    }
-    if ! file.is_file() {
-        return Err(new_box_error(&format!("File is not file: {:?}", file)));
-    }
-    let file_len = file.metadata()?.len();
-    if file_len > large_file_len {
-        return Err(new_box_error(&format!("File too large: {:?}, len: {}", file, file_len)));
-    }
-    let mut f = File::open(file)?;
-    let mut content = String::new();
-    f.read_to_string(&mut content)?;
-
-    Ok(content)
-}
 
 #[derive(Debug)]
 struct MatchLine {
