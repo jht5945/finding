@@ -64,7 +64,16 @@ fn get_term_width_message(message: &str, left: usize) -> String {
 fn find_huge_files(options: &Options, dir_path: &Path) {
     walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| {
         match p.metadata() {
-            Err(_) => (),
+            Err(err) => {
+                if options.verbose {
+                    let p_str = p.to_str();
+                    if p_str.is_some() {
+                        print_lastline("");
+                        print_message(MessageType::WARN, &format!("Read file {} meta failed: {}", p_str.unwrap(), err));
+                    }
+                }
+                return;
+            },
             Ok(metadata) => {
                 let len = metadata.len();
                 if len >= options.parsed_huge_file_size {
@@ -133,6 +142,10 @@ fn match_lines(tag: &str, content: &String, options: &Options) {
     };
     for ln in lines {
         if options.filter_large_line && ln.len() as u64 >= options.parsed_large_line_size {
+            if options.verbose {
+                print_lastline("");
+                print_message(MessageType::INFO, &format!("Skip large line: {} bytes", ln.len()));
+            }
             continue;
         }
         let matches = match ignore_case {
@@ -214,6 +227,10 @@ fn find_text_files(options: &Options, dir_path: &Path) {
             None => (),
             Some(p_str) => {
                 if (! options.scan_dot_git) && p_str.ends_with("/.git") {
+                    if options.verbose {
+                        print_lastline("");
+                        print_message(MessageType::INFO, &format!("Skip .git dir: {}", p_str));
+                    }
                     return false;
                 }
                 print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10))
