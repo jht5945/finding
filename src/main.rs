@@ -199,8 +199,11 @@ fn find_text_files(options: &Options, dir_path: &Path) {
             }
         }
         let file_content = match read_file_content(p, options.parsed_large_text_file_size) {
-            Err(_err) => {
-                // TODO ... print_message(MessageType::ERROR, &format!("Read file {} failed: {}", p_str, err));
+            Err(err) => {
+                if options.verbose {
+                    print_lastline("");
+                    print_message(MessageType::WARN, &format!("Read file {} failed: {}", p_str, err));
+                }
                 return;
             },
             Ok(c) => c,
@@ -235,6 +238,7 @@ struct Options {
     large_line_size: String,
     parsed_large_line_size: u64,
     scan_dot_git: bool,
+    verbose: bool,
     search_text: String,
 }
 
@@ -253,6 +257,7 @@ fn main() {
         large_line_size: String::from("10KB"),
         parsed_large_line_size: 0u64,
         scan_dot_git: false,
+        verbose: false,
         search_text: String::new(),
     };
     {
@@ -268,6 +273,7 @@ fn main() {
         ap.refer(&mut options.large_line_size).add_option(&["--large-line-size"], Store, "Large line, default 10KB");
         ap.refer(&mut options.scan_dot_git).add_option(&["--scan-dot-git"], StoreTrue, "Scan dot git");
         ap.refer(&mut options.version).add_option(&["-v", "--version"], StoreTrue, "Print version");
+        ap.refer(&mut options.verbose).add_option(&["--verbose"], StoreTrue, "Verbose");
         ap.refer(&mut options.search_text).add_argument("SEARCH TEXT", Store, "Search text");
         ap.parse_args_or_exit();
     }
