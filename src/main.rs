@@ -293,16 +293,12 @@ fn find_text_files(options: &Options, dir_path: &Path) {
 
 fn main() -> XResult<()> {
     let mut options = Options::new();
-    options.parse_args();
+    options.parse_args().ok();
     
     if options.version {
         print_version();
         return Ok(());
     }
-
-    options.parsed_huge_file_size = parse_size(&options.huge_file_size)? as u64;
-    options.parsed_large_text_file_size = parse_size(&options.large_text_file_size)? as u64;
-    options.parsed_large_line_size = parse_size(&options.large_line_size)? as u64;
 
     let dir_path = match get_absolute_path(&options.dir) {
         None => {
