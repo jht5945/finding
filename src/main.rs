@@ -113,10 +113,10 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
         true
     }).unwrap_or(());
     print_lastline("");
-    print_message(MessageType::OK, &format!("Total file count: {}, huge file count: {}, huge file size: {}",
+    print_message(MessageType::OK, &format!("Total file count: {}, huge file count: {}, total huge file size: {}",
                                     total_file_count_cell.into_inner(),
                                     huge_file_count_cell.into_inner(),
-                                    huge_file_size_cell.into_inner()))
+                                    get_display_size(huge_file_size_cell.into_inner() as i64)));
 }
 
 fn read_file_content(file: &Path, large_file_len: u64) -> XResult<String> {
