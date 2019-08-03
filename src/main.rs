@@ -3,6 +3,8 @@ extern crate term;
 extern crate term_size;
 extern crate rust_util;
 
+mod opt;
+
 use std::{
     cell::RefCell,
     fs::File,
@@ -11,7 +13,7 @@ use std::{
     time::SystemTime,
 };
 
-use argparse::{ArgumentParser, StoreTrue, Store};
+use opt::*;
 use rust_util::*;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -288,95 +290,23 @@ fn find_text_files(options: &Options, dir_path: &Path) {
                                     matched_file_count_cell.into_inner()));
 }
 
-struct Options {
-    version: bool,
-    target: String,
-    huge_file_size: String,
-    parsed_huge_file_size: u64,
-    large_text_file_size: String,
-    parsed_large_text_file_size: u64,
-    dir: String,
-    file_ext: String,
-    ignore_case: bool,
-    filter_large_line: bool,
-    large_line_size: String,
-    parsed_large_line_size: u64,
-    scan_dot_git: bool,
-    skip_link_dir: bool,
-    verbose: bool,
-    search_text: String,
-}
 
-fn main() {
-    let mut options = Options {
-        version: false,
-        target: String::from("text"),
-        huge_file_size: String::from("100M"),
-        parsed_huge_file_size: 0u64,
-        large_text_file_size: String::from("10M"),
-        parsed_large_text_file_size: 0u64,
-        file_ext: String::new(),
-        ignore_case: false,
-        dir: String::from("."),
-        filter_large_line: false,
-        large_line_size: String::from("10KB"),
-        parsed_large_line_size: 0u64,
-        scan_dot_git: false,
-        skip_link_dir: false,
-        verbose: false,
-        search_text: String::new(),
-    };
-    {
-        let mut ap = ArgumentParser::new();
-        ap.set_description("finding - command line find tool.");
-        ap.refer(&mut options.target).add_option(&["-t", "--target"], Store, "Target, text, huge[file], default text");
-        ap.refer(&mut options.dir).add_option(&["-d", "--dir"], Store, "Target directory, default current dir(.)");
-        ap.refer(&mut options.huge_file_size).add_option(&["--huge-file"], Store, "Huge file size, default 100M");
-        ap.refer(&mut options.large_text_file_size).add_option(&["--large-text-file"], Store, "Large text file, default 10M");
-        ap.refer(&mut options.file_ext).add_option(&["-f", "--file-ext"], Store, "File ext, default all");
-        ap.refer(&mut options.ignore_case).add_option(&["-i", "--ignore-case"], StoreTrue, "Ignore case, default false");
-        ap.refer(&mut options.filter_large_line).add_option(&["--filter-large-line"], StoreTrue, "Filter large line");
-        ap.refer(&mut options.large_line_size).add_option(&["--large-line-size"], Store, "Large line, default 10KB");
-        ap.refer(&mut options.scan_dot_git).add_option(&["--scan-dot-git"], StoreTrue, "Scan dot git");
-        ap.refer(&mut options.skip_link_dir).add_option(&["--skip-link-dir"], StoreTrue, "Skip link dir");
-        ap.refer(&mut options.version).add_option(&["-v", "--version"], StoreTrue, "Print version");
-        ap.refer(&mut options.verbose).add_option(&["--verbose"], StoreTrue, "Verbose");
-        ap.refer(&mut options.search_text).add_argument("SEARCH TEXT", Store, "Search text");
-        ap.parse_args_or_exit();
-    }
+fn main() -> XResult<()> {
+    let mut options = Options::new();
+    options.parse_args();
     
     if options.version {
         print_version();
-        return;
+        return Ok(());
     }
 
-
-    options.parsed_huge_file_size = match parse_size(&options.huge_file_size) {
-        Err(err) => {
-            print_message(MessageType::ERROR, &format!("Parse huge file size failed: {}", err));
-            return;
-        },
-        Ok(bytes) => bytes as u64,
-    };
-    options.parsed_large_text_file_size = match parse_size(&options.large_text_file_size) {
-        Err(err) => {
-            print_message(MessageType::ERROR, &format!("Parse large text file size failed: {}", err));
-            return;
-        },
-        Ok(bytes) => bytes as u64,
-    };
-    options.parsed_large_line_size = match parse_size(&options.large_line_size) {
-        Err(err) => {
-            print_message(MessageType::ERROR, &format!("Parse large line size failed: {}", err));
-            return;
-        },
-        Ok(bytes) => bytes as u64,
-    };
+    options.parsed_huge_file_size = parse_size(&options.huge_file_size)? as u64;
+    options.parsed_large_text_file_size = parse_size(&options.large_text_file_size)? as u64;
+    options.parsed_large_line_size = parse_size(&options.large_line_size)? as u64;
 
     let dir_path = match get_absolute_path(&options.dir) {
         None => {
-            print_message(MessageType::ERROR, &format!("Cannot find dir: {}", options.dir));
-            return;
+            return Err(new_box_error(&format!("Cannot find dir: {}", options.dir)));
         },
         Some(path) => path,
     };
@@ -385,10 +315,10 @@ fn main() {
         "huge" | "hugefile" => find_huge_files(&options, &dir_path),
         "text" => find_text_files(&options, &dir_path),
         unknown => {
-            print_message(MessageType::ERROR, &format!("Unknown command: {}", unknown));
-            return;
+            return Err(new_box_error(&format!("Unknown command: {}", unknown)));
         },
     }
     let cost_millis = SystemTime::now().duration_since(start.clone()).unwrap().as_millis();
     print_message(MessageType::OK, &format!("Finding finished, cost {} ms", cost_millis));
+    Ok(())
 }
