@@ -62,19 +62,12 @@ fn get_term_width_message(message: &str, left: usize) -> String {
 }
 
 fn find_huge_files(options: &Options, dir_path: &Path) {
-    let huge_file_size_bytes = match parse_size(&options.huge_file_size) {
-        Err(err) => {
-            print_message(MessageType::ERROR, &format!("Parse size failed: {}", err));
-            return;
-        },
-        Ok(bytes) => bytes as u64,
-    };
     walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| {
         match p.metadata() {
             Err(_) => (),
             Ok(metadata) => {
                 let len = metadata.len();
-                if len >= huge_file_size_bytes {
+                if len >= options.parsed_huge_file_size {
                     match p.to_str() {
                         None => (),
                         Some(p_str) => {
@@ -128,7 +121,9 @@ impl MatchLine {
     }
 }
 
-fn match_lines(tag: &str, content: &String, ignore_case: bool, search_text: &String) {
+fn match_lines(tag: &str, content: &String, options: &Options) {
+    let ignore_case = options.ignore_case;
+    let search_text = &options.search_text;
     let lines = content.lines();
     let mut match_lines_vec = vec![];
     let mut l_no = 0usize;
@@ -137,6 +132,9 @@ fn match_lines(tag: &str, content: &String, ignore_case: bool, search_text: &Str
         false => search_text.to_string(),
     };
     for ln in lines {
+        if options.filter_large_line && ln.len() as u64 >= options.parsed_large_line_size {
+            continue;
+        }
         let matches = match ignore_case {
             true => ln.to_lowercase().contains(the_search_text),
             false => ln.contains(the_search_text),
@@ -183,13 +181,6 @@ fn find_text_files(options: &Options, dir_path: &Path) {
             ext.split(",").map(|s| s.trim()).filter(|s| s.len() > 0).map(|s| String::from(".") + s).collect()
         },
     };
-    let large_text_file_size_bytes = match parse_size(&options.large_text_file_size) {
-        Err(err) => {
-            print_message(MessageType::ERROR, &format!("Parse size failed: {}", err));
-            return;
-        },
-        Ok(bytes) => bytes as u64,
-    };
     walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| {
         let p_str = match p.to_str() {
             None => return,
@@ -207,14 +198,14 @@ fn find_text_files(options: &Options, dir_path: &Path) {
                 return;
             }
         }
-        let file_content = match read_file_content(p, large_text_file_size_bytes) {
+        let file_content = match read_file_content(p, options.parsed_large_text_file_size) {
             Err(_err) => {
                 // TODO ... print_message(MessageType::ERROR, &format!("Read file {} failed: {}", p_str, err));
                 return;
             },
             Ok(c) => c,
         };
-        match_lines(p_str, &file_content, options.ignore_case, &options.search_text);
+        match_lines(p_str, &file_content, &options);
     }, &|p| {
         match p.to_str() {
             None => (),
@@ -234,10 +225,15 @@ struct Options {
     version: bool,
     target: String,
     huge_file_size: String,
+    parsed_huge_file_size: u64,
     large_text_file_size: String,
+    parsed_large_text_file_size: u64,
     dir: String,
     file_ext: String,
     ignore_case: bool,
+    filter_large_line: bool,
+    large_line_size: String,
+    parsed_large_line_size: u64,
     search_text: String,
 }
 
@@ -246,10 +242,15 @@ fn main() {
         version: false,
         target: String::from("text"),
         huge_file_size: String::from("100M"),
+        parsed_huge_file_size: 0u64,
         large_text_file_size: String::from("10M"),
+        parsed_large_text_file_size: 0u64,
         file_ext: String::new(),
         ignore_case: false,
         dir: String::from("."),
+        filter_large_line: false,
+        large_line_size: String::from("10KB"),
+        parsed_large_line_size: 0u64,
         search_text: String::new(),
     };
     {
@@ -261,6 +262,8 @@ fn main() {
         ap.refer(&mut options.large_text_file_size).add_option(&["--large-text-file"], Store, "Large text file, default 10M");
         ap.refer(&mut options.file_ext).add_option(&["-f", "--file-ext"], Store, "File ext, default all");
         ap.refer(&mut options.ignore_case).add_option(&["-i", "--ignore-case"], StoreTrue, "Ignore case, default false");
+        ap.refer(&mut options.filter_large_line).add_option(&["--filter-large-line"], StoreTrue, "Filter large line");
+        ap.refer(&mut options.large_line_size).add_option(&["--large-line-size"], Store, "Large line, default 10KB");
         ap.refer(&mut options.version).add_option(&["-v", "--version"], StoreTrue, "Print version");
         ap.refer(&mut options.search_text).add_argument("SEARCH TEXT", Store, "Search text");
         ap.parse_args_or_exit();
@@ -270,6 +273,29 @@ fn main() {
         print_version();
         return;
     }
+
+
+    options.parsed_huge_file_size = match parse_size(&options.huge_file_size) {
+        Err(err) => {
+            print_message(MessageType::ERROR, &format!("Parse huge file size failed: {}", err));
+            return;
+        },
+        Ok(bytes) => bytes as u64,
+    };
+    options.parsed_large_text_file_size = match parse_size(&options.large_text_file_size) {
+        Err(err) => {
+            print_message(MessageType::ERROR, &format!("Parse large text file size failed: {}", err));
+            return;
+        },
+        Ok(bytes) => bytes as u64,
+    };
+    options.parsed_large_line_size = match parse_size(&options.large_line_size) {
+        Err(err) => {
+            print_message(MessageType::ERROR, &format!("Parse large line size failed: {}", err));
+            return;
+        },
+        Ok(bytes) => bytes as u64,
+    };
 
     let dir_path = match get_absolute_path(&options.dir) {
         None => {
