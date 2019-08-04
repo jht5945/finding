@@ -188,6 +188,11 @@ fn find_text_files(options: &Options, dir_path: &Path) {
                 return;
             }
         }
+        if options.filter_file_name.len() > 0 {
+            if ! p_str.contains(options.filter_file_name.as_str()) {
+                return;
+            }
+        }
         let file_content = match read_file_content(p, options.parsed_large_text_file_size) {
             Err(err) => {
                 if options.verbose {

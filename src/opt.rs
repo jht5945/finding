@@ -18,6 +18,7 @@ pub struct Options {
     pub parsed_large_line_size: u64,
     pub scan_dot_git: bool,
     pub skip_link_dir: bool,
+    pub filter_file_name: String,
     pub verbose: bool,
     pub search_text: String,
 }
@@ -39,6 +40,7 @@ impl Options {
             parsed_large_line_size: 0u64,
             scan_dot_git: false,
             skip_link_dir: false,
+            filter_file_name: String::new(),
             verbose: false,
             search_text: String::new(),
         }
@@ -58,6 +60,7 @@ impl Options {
             ap.refer(&mut self.large_line_size).add_option(&["--large-line-size"], Store, "Large line, default 10KB");
             ap.refer(&mut self.scan_dot_git).add_option(&["--scan-dot-git"], StoreTrue, "Scan dot git");
             ap.refer(&mut self.skip_link_dir).add_option(&["--skip-link-dir"], StoreTrue, "Skip link dir");
+            ap.refer(&mut self.filter_file_name).add_option(&["--filter-file-name"], Store, "Filter file name [Text Mode]");
             ap.refer(&mut self.version).add_option(&["-v", "--version"], StoreTrue, "Print version");
             ap.refer(&mut self.verbose).add_option(&["--verbose"], StoreTrue, "Verbose");
             ap.refer(&mut self.search_text).add_argument("SEARCH TEXT", Store, "Search text");
