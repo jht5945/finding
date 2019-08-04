@@ -20,6 +20,7 @@ pub struct Options {
     pub skip_dot_dir: bool,
     pub skip_link_dir: bool,
     pub filter_file_name: String,
+    pub filter_line_content: String,
     pub verbose: bool,
     pub search_text: String,
 }
@@ -43,6 +44,7 @@ impl Options {
             skip_dot_dir: false,
             skip_link_dir: false,
             filter_file_name: String::new(),
+            filter_line_content: String::new(),
             verbose: false,
             search_text: String::new(),
         }
@@ -64,6 +66,7 @@ impl Options {
             ap.refer(&mut self.skip_dot_dir).add_option(&["--skip-dot-dir"], StoreTrue, "Skipt dot dir [Text Mode]");
             ap.refer(&mut self.skip_link_dir).add_option(&["--skip-link-dir"], StoreTrue, "Skip link dir");
             ap.refer(&mut self.filter_file_name).add_option(&["--filter-file-name"], Store, "Filter file name [Text Mode]");
+            ap.refer(&mut self.filter_line_content).add_option(&["--filter-line-content"], Store, "Filter line content [Text Mode]");
             ap.refer(&mut self.version).add_option(&["-v", "--version"], StoreTrue, "Print version");
             ap.refer(&mut self.verbose).add_option(&["--verbose"], StoreTrue, "Verbose");
             ap.refer(&mut self.search_text).add_argument("SEARCH TEXT", Store, "Search text");

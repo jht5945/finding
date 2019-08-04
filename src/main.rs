@@ -120,7 +120,13 @@ fn match_lines(tag: &str, content: &String, options: &Options) -> bool {
             true => ln.to_lowercase().contains(the_search_text),
             false => ln.contains(the_search_text),
         };
-        if matches {
+        let mut matches_line_content = true;
+        if options.filter_line_content.len() > 0 {
+            if ! ln.contains(options.filter_line_content.as_str()) {
+                matches_line_content = false;
+            }
+        }
+        if matches && matches_line_content {
             match_lines_vec.push(MatchLine::new(l_no, ln.to_string()));
         }
         l_no += 1;
