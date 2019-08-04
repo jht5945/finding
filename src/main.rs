@@ -219,6 +219,9 @@ fn find_text_files(options: &Options, dir_path: &Path) {
                     }
                     return false;
                 }
+                if options.skip_dot_dir && p_str.contains("/.") {
+                    return false;
+                }
                 if options.skip_link_dir && is_symlink(p) {
                     if options.verbose {
                         print_lastline("");
