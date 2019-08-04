@@ -239,8 +239,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
 
 
 fn main() -> XResult<()> {
-    let mut options = Options::new();
-    options.parse_args().ok();
+    let options = Options::new_and_parse_args()?;
     
     if options.version {
         print_version();

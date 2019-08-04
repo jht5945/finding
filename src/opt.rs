@@ -69,4 +69,10 @@ impl Options {
         self.parsed_large_line_size = parse_size(&self.large_line_size)? as u64;
         Ok(())
     }
+
+    pub fn new_and_parse_args() -> XResult<Options> {
+        let mut options = Options::new();
+        options.parse_args()?;
+        Ok(options)
+    }
 }
