@@ -1,7 +1,10 @@
 
 use argparse::{ArgumentParser, StoreTrue, Store};
 
-use rust_util::*;
+use rust_util::{
+    XResult,
+    util_size::*,
+};
 
 pub struct Options {
     pub version: bool,

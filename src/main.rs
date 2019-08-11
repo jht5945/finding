@@ -13,7 +13,13 @@ use std::{
 };
 
 use opt::*;
-use rust_util::*;
+use rust_util::{
+    XResult,
+    new_box_error,
+    util_file::*,
+    util_size::*,
+    util_msg::*,
+};
 use local_util::*;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
