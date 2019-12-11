@@ -3,9 +3,11 @@ name = "finding"
 version = "0.1.2"
 authors = ["Hatter Jiang <jht5945@gmail.com>"]
 edition = "2018"
+description = "command line finding tool"
+license = "MIT"
 
 [dependencies]
 argparse = "0.2.2"
 term = "0.5.2"
 term_size = "0.3.1"
-rust_util = { git = "https://github.com/jht5945/rust_util" }
+rust_util = "0.1.0"
