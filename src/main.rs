@@ -139,7 +139,7 @@ fn match_lines(tag: &str, content: &String, options: &Options) -> bool {
     }
 
     let mut matches_any = false;
-    if match_lines_vec.len() > 0 {
+    if !match_lines_vec.is_empty() {
         print_lastline("");
         print_message(MessageType::OK, &format!("Find in {}:", tag));
         for i in 0..match_lines_vec.len() {
@@ -164,7 +164,7 @@ fn match_lines(tag: &str, content: &String, options: &Options) -> bool {
 }
 
 fn find_text_files(options: &Options, dir_path: &Path) {
-    if options.search_text.len() < 1 {
+    if options.search_text.is_empty() {
         print_message(MessageType::ERROR, "Param search_text cannot be empty.");
         return;
     }
@@ -174,7 +174,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
     let file_exts = match options.file_ext.as_str() {
         "" => vec![],
         ext => {
-            ext.split(",").map(|s| s.trim()).filter(|s| s.len() > 0).map(|s| String::from(".") + s).collect()
+            ext.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).map(|s| String::from(".") + s).collect()
         },
     };
     let total_file_count_cell = RefCell::new(0u64);
@@ -188,7 +188,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
             None => return,
             Some(s) => s,
         };
-        if file_exts.len() > 0 {
+        if !file_exts.is_empty() {
             let mut file_ext_matches = false;
             for i in 0..file_exts.len() {
                 if p_str.to_lowercase().ends_with(&file_exts[i]) {
@@ -200,7 +200,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
                 return;
             }
         }
-        if options.filter_file_name.len() > 0 {
+        if !options.filter_file_name.is_empty() {
             if ! p_str.contains(options.filter_file_name.as_str()) {
                 return;
             }
