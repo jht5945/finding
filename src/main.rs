@@ -26,12 +26,11 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const GIT_HASH: &str = env!("GIT_HASH");
 
 fn print_version() {
-    print!(r#"finding {} - {}
+    println!(r#"finding {} - {}
 Copyright (C) 2019 Hatter Jiang.
 License MIT <https://opensource.org/licenses/MIT>
 
-Written by Hatter Jiang
-"#, VERSION, &GIT_HASH[0..7]);
+Written by Hatter Jiang"#, VERSION, &GIT_HASH[0..7]);
 }
 
 fn find_huge_files(options: &Options, dir_path: &Path) {
@@ -43,10 +42,9 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
         match p.metadata() {
             Err(err) => {
                 if options.verbose {
-                    let p_str = p.to_str();
-                    if p_str.is_some() {
+                    if let Some(p_str) = p.to_str() {
                         print_lastline("");
-                        print_message(MessageType::WARN, &format!("Read file {} meta failed: {}", p_str.unwrap(), err));
+                        print_message(MessageType::WARN, &format!("Read file {} meta failed: {}", p_str, err));
                     }
                 }
                 return;
@@ -105,7 +103,7 @@ impl MatchLine {
     }
 }
 
-fn match_lines(tag: &str, content: &String, options: &Options) -> bool {
+fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
     let search_text = &options.search_text;
     let lines = content.lines();
     let mut match_lines_vec = vec![];
@@ -127,7 +125,7 @@ fn match_lines(tag: &str, content: &String, options: &Options) -> bool {
             false => ln.contains(the_search_text),
         };
         let mut matches_line_content = true;
-        if options.filter_line_content.len() > 0 {
+        if !options.filter_line_content.is_empty(){
             if ! ln.contains(options.filter_line_content.as_str()) {
                 matches_line_content = false;
             }
@@ -190,8 +188,8 @@ fn find_text_files(options: &Options, dir_path: &Path) {
         };
         if !file_exts.is_empty() {
             let mut file_ext_matches = false;
-            for i in 0..file_exts.len() {
-                if p_str.to_lowercase().ends_with(&file_exts[i]) {
+            for file_ext in &file_exts {
+                if p_str.to_lowercase().ends_with(file_ext) {
                     file_ext_matches = true;
                     break;
                 }
