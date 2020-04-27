@@ -124,7 +124,7 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
                 let ss: Vec<&str> = match_line.line_string.split(search_text).collect();
                 for j in 0..ss.len() {
                     print!("{}", ss[j]);
-                    if j < ss.len() -1 {
+                    if j < ss.len() - 1 {
                         print_color(Some(term::color::RED), true, search_text);
                     }
                 }
@@ -143,8 +143,8 @@ fn find_text_files(options: &Options, dir_path: &Path) {
     if options.ignore_case {
         print_message(MessageType::WARN, "Using ignore case mode, highlight print is disabled.");
     }
-    let file_exts = match options.file_ext.as_str() {
-        "" => vec![],
+    let file_exts = match &options.file_ext {
+        ext if ext.is_empty() => vec![],
         ext => ext.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).map(|s| ".".to_owned() + s).collect(),
     };
     let total_file_count_cell = RefCell::new(0u64);
@@ -158,14 +158,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
             Some(s) => s, None => return,
         };
         if !file_exts.is_empty() {
-            let mut file_ext_matches = false;
-            for file_ext in &file_exts {
-                if p_str.to_lowercase().ends_with(file_ext) {
-                    file_ext_matches = true;
-                    break;
-                }
-            }
-            if !file_ext_matches {
+            if !file_exts.iter().any(|file_ext| p_str.to_lowercase().ends_with(file_ext)) {
                 return;
             }
         }
