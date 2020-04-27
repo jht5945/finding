@@ -14,7 +14,7 @@ pub struct Options {
     pub filter_large_line: bool,
     pub large_line_size: String,
     pub parsed_large_line_size: u64,
-    pub scan_dot_git: bool,
+    pub scan_dot_git_dir: bool,
     pub skip_dot_dir: bool,
     pub skip_link_dir: bool,
     pub skip_target_dir: bool,
@@ -39,7 +39,7 @@ impl Options {
             filter_large_line: false,
             large_line_size: String::from("10KB"),
             parsed_large_line_size: 0u64,
-            scan_dot_git: false,
+            scan_dot_git_dir: false,
             skip_dot_dir: false,
             skip_link_dir: false,
             skip_target_dir: false,
@@ -62,7 +62,7 @@ impl Options {
             ap.refer(&mut self.ignore_case).add_option(&["-i", "--ignore-case"], StoreTrue, "Ignore case, default false");
             ap.refer(&mut self.filter_large_line).add_option(&["--filter-large-line"], StoreTrue, "Filter large line");
             ap.refer(&mut self.large_line_size).add_option(&["--large-line-size"], Store, "Large line, default 10KB");
-            ap.refer(&mut self.scan_dot_git).add_option(&["--scan-dot-git"], StoreTrue, "Scan dot git");
+            ap.refer(&mut self.scan_dot_git_dir).add_option(&["--scan-dot-git"], StoreTrue, "Scan dot git");
             ap.refer(&mut self.skip_dot_dir).add_option(&["--skip-dot-dir"], StoreTrue, "Skipt dot dir [Text Mode]");
             ap.refer(&mut self.skip_link_dir).add_option(&["--skip-link-dir"], StoreTrue, "Skip link dir");
             ap.refer(&mut self.skip_target_dir).add_option(&["--skip-target-dir"], StoreTrue, "Skip target dir");

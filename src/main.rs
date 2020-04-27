@@ -6,12 +6,7 @@ extern crate rust_util;
 mod opt;
 mod local_util;
 
-use std::{
-    cell::RefCell,
-    path::Path,
-    time::SystemTime,
-};
-
+use std::{ cell::RefCell, path::Path, time::SystemTime, };
 use opt::*;
 use rust_util::{
     iff,
@@ -27,15 +22,27 @@ const EMPTY: &str = "";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const GIT_HASH: &str = env!("GIT_HASH");
 
+#[derive(Debug)]
+struct MatchLine {
+    line_number: usize,
+    line_string: String,
+}
+
+impl MatchLine {
+    fn new(line_number: usize, line_string: String) -> MatchLine {
+        MatchLine { line_number, line_string, }
+    }
+}
+
 fn print_version() {
     println!(r#"finding {} - {}
-Copyright (C) 2019 Hatter Jiang.
+Copyright (C) 2019-2020 Hatter Jiang.
 License MIT <https://opensource.org/licenses/MIT>
 
 Written by Hatter Jiang"#, VERSION, &GIT_HASH[0..7]);
 }
 
-pub fn clear_n_print_message(mt: MessageType, message: &str) {
+fn clear_n_print_message(mt: MessageType, message: &str) {
     print_lastline(EMPTY);
     print_message(mt, message);
 }
@@ -47,11 +54,9 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
     walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| {
         total_file_count_cell.replace_with(|&mut c| c + 1);
         match p.metadata() {
-            Err(err) => {
-                if options.verbose {
-                    if let Some(p_str) = p.to_str() {
-                        clear_n_print_message(MessageType::WARN, &format!("Read file {} meta failed: {}", p_str, err));
-                    }
+            Err(err) => if options.verbose {
+                if let Some(p_str) = p.to_str() {
+                    clear_n_print_message(MessageType::WARN, &format!("Read file {} meta failed: {}", p_str, err));
                 }
             },
             Ok(metadata) => {
@@ -81,19 +86,6 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
                                             total_file_count_cell.into_inner(),
                                             huge_file_count_cell.into_inner(),
                                             get_display_size(huge_file_size_cell.into_inner() as i64)));
-}
-
-
-#[derive(Debug)]
-struct MatchLine {
-    line_number: usize,
-    line_string: String,
-}
-
-impl MatchLine {
-    fn new(line_number: usize, line_string: String) -> MatchLine {
-        MatchLine { line_number, line_string, }
-    }
 }
 
 fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
@@ -193,7 +185,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
     }, &|p| {
         total_dir_count_cell.replace_with(|&mut c| c + 1);
         if let Some(p_str) = p.to_str() {
-            if (!options.scan_dot_git) && p_str.ends_with("/.git") {
+            if (!options.scan_dot_git_dir) && p_str.ends_with("/.git") {
                 if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip .git dir: {}", p_str)); }
                 return false;
             }
