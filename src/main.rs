@@ -157,10 +157,8 @@ fn find_text_files(options: &Options, dir_path: &Path) {
         let p_str = match p.to_str() {
             Some(s) => s, None => return,
         };
-        if !file_exts.is_empty() {
-            if !file_exts.iter().any(|file_ext| p_str.to_lowercase().ends_with(file_ext)) {
-                return;
-            }
+        if !file_exts.is_empty() && !file_exts.iter().any(|file_ext| p_str.to_lowercase().ends_with(file_ext)) {
+            return;
         }
         if !options.filter_file_name.is_empty() && !p_str.contains(options.filter_file_name.as_str()) {
             return;
