@@ -14,13 +14,14 @@ use std::{
 
 use opt::*;
 use rust_util::{
+    iff,
     XResult,
     new_box_error,
     util_file::*,
     util_size::*,
     util_msg::*,
 };
-use local_util::*;
+use local_util::read_file_content;
 
 const EMPTY: &str = "";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -52,7 +53,6 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
                         clear_n_print_message(MessageType::WARN, &format!("Read file {} meta failed: {}", p_str, err));
                     }
                 }
-                return;
             },
             Ok(metadata) => {
                 let len = metadata.len();
@@ -91,11 +91,8 @@ struct MatchLine {
 }
 
 impl MatchLine {
-    fn new(l_no: usize, l_str: String) -> MatchLine {
-        MatchLine {
-            line_number: l_no,
-            line_string: l_str,
-        }
+    fn new(line_number: usize, line_string: String) -> MatchLine {
+        MatchLine { line_number, line_string, }
     }
 }
 
@@ -104,10 +101,7 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
     let lines = content.lines();
     let mut match_lines_vec = vec![];
     let mut l_no = 0usize;
-    let the_search_text = &match options.ignore_case {
-        true => search_text.to_lowercase(),
-        false => search_text.to_string(),
-    };
+    let the_search_text = &iff!(options.ignore_case, search_text.to_lowercase(), search_text.to_string());
     for ln in lines {
         if options.filter_large_line && ln.len() as u64 >= options.parsed_large_line_size {
             if options.verbose {
@@ -115,45 +109,39 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
             }
             continue;
         }
-        let matches = match options.ignore_case {
-            true => ln.to_lowercase().contains(the_search_text),
-            false => ln.contains(the_search_text),
+        let matches = iff!(options.ignore_case, ln.to_lowercase().contains(the_search_text), ln.contains(the_search_text));
+        let matches_line_content = match &options.filter_line_content {
+            c if c.is_empty() => true,
+            c => ln.contains(c),
         };
-        let mut matches_line_content = true;
-        if !options.filter_line_content.is_empty(){
-            if ! ln.contains(options.filter_line_content.as_str()) {
-                matches_line_content = false;
-            }
-        }
         if matches && matches_line_content {
             match_lines_vec.push(MatchLine::new(l_no, ln.to_string()));
         }
         l_no += 1;
     }
 
-    let mut matches_any = false;
-    if !match_lines_vec.is_empty() {
+    if match_lines_vec.is_empty() {
+        false
+    } else {
         print_lastline(EMPTY);
         print_message(MessageType::OK, &format!("Find in {}:", tag));
-        for i in 0..match_lines_vec.len() {
-            print!("{}: ", match_lines_vec[i].line_number + 1);
-            match options.ignore_case {
-                true => println!("{}", match_lines_vec[i].line_string),
-                false => {
-                    let ss: Vec<&str> = match_lines_vec[i].line_string.split(search_text).collect();
-                    for j in 0..ss.len() {
-                        print!("{}", ss[j]);
-                        if j < ss.len() -1 {
-                            print_color(Some(term::color::RED), true, search_text);
-                        }
+        for match_line in &match_lines_vec {
+            print!("{}: ", match_line.line_number + 1);
+            if options.ignore_case {
+                println!("{}", match_line.line_string);
+            } else {
+                let ss: Vec<&str> = match_line.line_string.split(search_text).collect();
+                for j in 0..ss.len() {
+                    print!("{}", ss[j]);
+                    if j < ss.len() -1 {
+                        print_color(Some(term::color::RED), true, search_text);
                     }
-                    println!();
-                },
+                }
+                println!();
             }
         }
-        matches_any = true;
+        true
     }
-    matches_any
 }
 
 fn find_text_files(options: &Options, dir_path: &Path) {
@@ -166,9 +154,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
     }
     let file_exts = match options.file_ext.as_str() {
         "" => vec![],
-        ext => {
-            ext.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).map(|s| String::from(".") + s).collect()
-        },
+        ext => ext.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).map(|s| ".".to_owned() + s).collect(),
     };
     let total_file_count_cell = RefCell::new(0u64);
     let scaned_file_count_cell = RefCell::new(0u64);
@@ -178,8 +164,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
     walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| {
         total_file_count_cell.replace_with(|&mut c| c + 1);
         let p_str = match p.to_str() {
-            None => return,
-            Some(s) => s,
+            Some(s) => s, None => return,
         };
         if !file_exts.is_empty() {
             let mut file_ext_matches = false;
@@ -189,23 +174,20 @@ fn find_text_files(options: &Options, dir_path: &Path) {
                     break;
                 }
             }
-            if ! file_ext_matches {
+            if !file_ext_matches {
                 return;
             }
         }
-        if !options.filter_file_name.is_empty() {
-            if ! p_str.contains(options.filter_file_name.as_str()) {
-                return;
-            }
+        if !options.filter_file_name.is_empty() && !p_str.contains(options.filter_file_name.as_str()) {
+            return;
         }
         let file_content = match read_file_content(p, options.parsed_large_text_file_size) {
-            Err(err) => {
+            Ok(c) => c, Err(err) => {
                 if options.verbose {
                     clear_n_print_message(MessageType::WARN, &format!("Read file {} failed: {}", p_str, err));
                 }
                 return;
             },
-            Ok(c) => c,
         };
         scaned_file_count_cell.replace_with(|&mut c| c + 1);
         if match_lines(p_str, &file_content, &options) {
@@ -213,27 +195,24 @@ fn find_text_files(options: &Options, dir_path: &Path) {
         }
     }, &|p| {
         total_dir_count_cell.replace_with(|&mut c| c + 1);
-        match p.to_str() {
-            None => (),
-            Some(p_str) => {
-                if (! options.scan_dot_git) && p_str.ends_with("/.git") {
-                    if options.verbose {
-                        clear_n_print_message(MessageType::INFO, &format!("Skip .git dir: {}", p_str));
-                    }
-                    return false;
+        if let Some(p_str) = p.to_str() {
+            if (!options.scan_dot_git) && p_str.ends_with("/.git") {
+                if options.verbose {
+                    clear_n_print_message(MessageType::INFO, &format!("Skip .git dir: {}", p_str));
                 }
-                if options.skip_dot_dir && p_str.contains("/.") {
-                    return false;
+                return false;
+            }
+            if options.skip_dot_dir && p_str.contains("/.") {
+                return false;
+            }
+            if options.skip_link_dir && is_symlink(p) {
+                if options.verbose {
+                    clear_n_print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str));
                 }
-                if options.skip_link_dir && is_symlink(p) {
-                    if options.verbose {
-                        clear_n_print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str));
-                    }
-                    return false;
-                }
-                scaned_dir_count_cell.replace_with(|&mut c| c + 1);
-                print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10))
-            },
+                return false;
+            }
+            scaned_dir_count_cell.replace_with(|&mut c| c + 1);
+            print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10));
         }
         true
     }).unwrap_or(());
@@ -256,17 +235,14 @@ fn main() -> XResult<()> {
     }
 
     let dir_path = match get_absolute_path(&options.dir) {
-        Some(path) => path, None => {
-            return Err(new_box_error(&format!("Cannot find dir: {}", options.dir)));
-        },
+        Some(path) => path,
+        None => return Err(new_box_error(&format!("Cannot find dir: {}", options.dir))),
     };
     let start = SystemTime::now();
     match options.target.as_str() {
         "huge" | "hugefile" => find_huge_files(&options, &dir_path),
         "text" => find_text_files(&options, &dir_path),
-        unknown => {
-            return Err(new_box_error(&format!("Unknown command: {}", unknown)));
-        },
+        others => return Err(new_box_error(&format!("Unknown command: {}", others))),
     }
     let cost_millis = SystemTime::now().duration_since(start.clone()).unwrap().as_millis();
     print_message(MessageType::OK, &format!("Finding finished, cost {} ms", cost_millis));
