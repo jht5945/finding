@@ -22,6 +22,7 @@ use rust_util::{
 };
 use local_util::*;
 
+const EMPTY: &str = "";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const GIT_HASH: &str = env!("GIT_HASH");
 
@@ -31,6 +32,11 @@ Copyright (C) 2019 Hatter Jiang.
 License MIT <https://opensource.org/licenses/MIT>
 
 Written by Hatter Jiang"#, VERSION, &GIT_HASH[0..7]);
+}
+
+pub fn clear_n_print_message(mt: MessageType, message: &str) {
+    print_lastline(EMPTY);
+    print_message(mt, message);
 }
 
 fn find_huge_files(options: &Options, dir_path: &Path) {
@@ -43,8 +49,7 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
             Err(err) => {
                 if options.verbose {
                     if let Some(p_str) = p.to_str() {
-                        print_lastline("");
-                        print_message(MessageType::WARN, &format!("Read file {} meta failed: {}", p_str, err));
+                        clear_n_print_message(MessageType::WARN, &format!("Read file {} meta failed: {}", p_str, err));
                     }
                 }
                 return;
@@ -54,37 +59,28 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
                 if len >= options.parsed_huge_file_size {
                     huge_file_count_cell.replace_with(|&mut c| c + 1);
                     huge_file_size_cell.replace_with(|&mut c| c + len);
-                    match p.to_str() {
-                        None => (),
-                        Some(p_str) => {
-                            print_lastline("");
-                            print_message(MessageType::OK, &format!("{} [{}]", p_str, get_display_size(len as i64)));
-                        },
+                    if let Some(p_str) = p.to_str() {
+                        clear_n_print_message(MessageType::OK, &format!("{} [{}]", p_str, get_display_size(len as i64)));
                     }
                 }
             },
         }
     }, &|p| {
-        match p.to_str() {
-            None => (),
-            Some(p_str) => {
-                if options.skip_link_dir && is_symlink(p) {
-                    if options.verbose {
-                        print_lastline("");
-                        print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str));
-                    }
-                    return false;
+        if let Some(p_str) = p.to_str() {
+            if options.skip_link_dir && is_symlink(p) {
+                if options.verbose {
+                    clear_n_print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str));
                 }
-                print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10))
-            },
+                return false;
+            }
+            print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10));
         }
         true
     }).unwrap_or(());
-    print_lastline("");
-    print_message(MessageType::OK, &format!("Total file count: {}, huge file count: {}, total huge file size: {}",
-                                    total_file_count_cell.into_inner(),
-                                    huge_file_count_cell.into_inner(),
-                                    get_display_size(huge_file_size_cell.into_inner() as i64)));
+    clear_n_print_message(MessageType::OK, &format!("Total file count: {}, huge file count: {}, total huge file size: {}",
+                                            total_file_count_cell.into_inner(),
+                                            huge_file_count_cell.into_inner(),
+                                            get_display_size(huge_file_size_cell.into_inner() as i64)));
 }
 
 
@@ -115,8 +111,7 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
     for ln in lines {
         if options.filter_large_line && ln.len() as u64 >= options.parsed_large_line_size {
             if options.verbose {
-                print_lastline("");
-                print_message(MessageType::INFO, &format!("Skip large line: {} bytes", ln.len()));
+                clear_n_print_message(MessageType::INFO, &format!("Skip large line: {} bytes", ln.len()));
             }
             continue;
         }
@@ -138,7 +133,7 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
 
     let mut matches_any = false;
     if !match_lines_vec.is_empty() {
-        print_lastline("");
+        print_lastline(EMPTY);
         print_message(MessageType::OK, &format!("Find in {}:", tag));
         for i in 0..match_lines_vec.len() {
             print!("{}: ", match_lines_vec[i].line_number + 1);
@@ -206,8 +201,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
         let file_content = match read_file_content(p, options.parsed_large_text_file_size) {
             Err(err) => {
                 if options.verbose {
-                    print_lastline("");
-                    print_message(MessageType::WARN, &format!("Read file {} failed: {}", p_str, err));
+                    clear_n_print_message(MessageType::WARN, &format!("Read file {} failed: {}", p_str, err));
                 }
                 return;
             },
@@ -224,8 +218,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
             Some(p_str) => {
                 if (! options.scan_dot_git) && p_str.ends_with("/.git") {
                     if options.verbose {
-                        print_lastline("");
-                        print_message(MessageType::INFO, &format!("Skip .git dir: {}", p_str));
+                        clear_n_print_message(MessageType::INFO, &format!("Skip .git dir: {}", p_str));
                     }
                     return false;
                 }
@@ -234,8 +227,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
                 }
                 if options.skip_link_dir && is_symlink(p) {
                     if options.verbose {
-                        print_lastline("");
-                        print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str));
+                        clear_n_print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str));
                     }
                     return false;
                 }
@@ -245,7 +237,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
         }
         true
     }).unwrap_or(());
-    print_lastline("");
+    print_lastline(EMPTY);
     print_message(MessageType::OK, &format!("Total dir count: {}, scaned dir count: {}",
                                     total_dir_count_cell.into_inner(),
                                     scaned_dir_count_cell.into_inner()));
@@ -254,7 +246,6 @@ fn find_text_files(options: &Options, dir_path: &Path) {
                                     scaned_file_count_cell.into_inner(),
                                     matched_file_count_cell.into_inner()));
 }
-
 
 fn main() -> XResult<()> {
     let options = Options::new_and_parse_args()?;
@@ -265,10 +256,9 @@ fn main() -> XResult<()> {
     }
 
     let dir_path = match get_absolute_path(&options.dir) {
-        None => {
+        Some(path) => path, None => {
             return Err(new_box_error(&format!("Cannot find dir: {}", options.dir)));
         },
-        Some(path) => path,
     };
     let start = SystemTime::now();
     match options.target.as_str() {
