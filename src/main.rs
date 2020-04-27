@@ -92,7 +92,7 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
     let search_text = &options.search_text;
     let lines = content.lines();
     let mut match_lines_vec = vec![];
-    let mut l_no = 0usize;
+    let mut line_no = 0usize;
     let the_search_text = &iff!(options.ignore_case, search_text.to_lowercase(), search_text.to_string());
     for ln in lines {
         if options.filter_large_line && ln.len() as u64 >= options.parsed_large_line_size {
@@ -107,9 +107,9 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
             c => ln.contains(c),
         };
         if matches && matches_line_content {
-            match_lines_vec.push(MatchLine::new(l_no, ln.to_string()));
+            match_lines_vec.push(MatchLine::new(line_no, ln.to_string()));
         }
-        l_no += 1;
+        line_no += 1;
     }
 
     if match_lines_vec.is_empty() {
