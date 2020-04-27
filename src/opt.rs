@@ -17,6 +17,7 @@ pub struct Options {
     pub scan_dot_git: bool,
     pub skip_dot_dir: bool,
     pub skip_link_dir: bool,
+    pub skip_target_dir: bool,
     pub filter_file_name: String,
     pub filter_line_content: String,
     pub verbose: bool,
@@ -41,6 +42,7 @@ impl Options {
             scan_dot_git: false,
             skip_dot_dir: false,
             skip_link_dir: false,
+            skip_target_dir: false,
             filter_file_name: String::new(),
             filter_line_content: String::new(),
             verbose: false,
@@ -63,6 +65,7 @@ impl Options {
             ap.refer(&mut self.scan_dot_git).add_option(&["--scan-dot-git"], StoreTrue, "Scan dot git");
             ap.refer(&mut self.skip_dot_dir).add_option(&["--skip-dot-dir"], StoreTrue, "Skipt dot dir [Text Mode]");
             ap.refer(&mut self.skip_link_dir).add_option(&["--skip-link-dir"], StoreTrue, "Skip link dir");
+            ap.refer(&mut self.skip_target_dir).add_option(&["--skip-target-dir"], StoreTrue, "Skip target dir");
             ap.refer(&mut self.filter_file_name).add_option(&["--filter-file-name"], Store, "Filter file name [Text Mode]");
             ap.refer(&mut self.filter_line_content).add_option(&["--filter-line-content"], Store, "Filter line content [Text Mode]");
             ap.refer(&mut self.version).add_option(&["-v", "--version"], StoreTrue, "Print version");

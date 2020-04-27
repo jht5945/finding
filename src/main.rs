@@ -201,7 +201,16 @@ fn find_text_files(options: &Options, dir_path: &Path) {
                 }
                 return false;
             }
+            if options.skip_target_dir && p_str.ends_with("/target") {
+                if options.verbose {
+                    clear_n_print_message(MessageType::INFO, &format!("Skip target dir: {}", p_str));
+                }
+                return false;
+            }
             if options.skip_dot_dir && p_str.contains("/.") {
+                if options.verbose {
+                    clear_n_print_message(MessageType::INFO, &format!("Skip dot(.) dir: {}", p_str));
+                }
                 return false;
             }
             if options.skip_link_dir && is_symlink(p) {
