@@ -81,7 +81,7 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
             print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10));
         }
         true
-    }).unwrap_or(());
+    }).ok();
     clear_n_print_message(MessageType::OK, &format!("Total file count: {}, huge file count: {}, total huge file size: {}",
                                             total_file_count_cell.into_inner(),
                                             huge_file_count_cell.into_inner(),
@@ -196,7 +196,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
             print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10));
         }
         true
-    }).unwrap_or(());
+    }).ok();
     print_lastline(EMPTY);
     print_message(MessageType::OK, &format!("Total dir count: {}, scaned dir count: {}",
                                     total_dir_count_cell.into_inner(),
