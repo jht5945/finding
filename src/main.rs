@@ -123,8 +123,7 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
     if match_lines_vec.is_empty() {
         false
     } else {
-        print_lastline(EMPTY);
-        print_message(MessageType::OK, &format!("Find in {}:", tag));
+        clear_n_print_message(MessageType::OK, &format!("Find in {}:", tag));
         for match_line in &match_lines_vec {
             print!("{}: ", match_line.line_number + 1);
             if options.ignore_case {
