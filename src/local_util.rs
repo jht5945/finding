@@ -5,7 +5,8 @@ use std::{
 };
 use rust_util::{ XResult, new_box_error, };
 
-pub fn read_file_content(file: &Path, large_file_len: u64) -> XResult<String> {
+pub fn read_file_content<P: AsRef<Path>>(p: P, large_file_len: u64) -> XResult<String> {
+    let file = p.as_ref();
     if !file.exists() {
         return Err(new_box_error(&format!("File not exists: {:?}", file)));
     }
