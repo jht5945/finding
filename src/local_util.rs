@@ -10,7 +10,7 @@ pub fn read_file_content(file: &Path, large_file_len: u64) -> XResult<String> {
         return Err(new_box_error(&format!("File not exists: {:?}", file)));
     }
     if !file.is_file() {
-        return Err(new_box_error(&format!("File is not file: {:?}", file)));
+        return Err(new_box_error(&format!("File is not a file: {:?}", file)));
     }
     let file_len = file.metadata()?.len();
     if file_len > large_file_len {
