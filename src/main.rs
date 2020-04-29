@@ -49,8 +49,8 @@ fn clear_n_print_message(mt: MessageType, message: &str) {
 
 fn find_huge_files(options: &Options, dir_path: &Path) {
     let total_file_count_cell = Cell::new(0_u64);
-    let huge_file_count_cell = Cell::new(0_u64);
-    let huge_file_size_cell = Cell::new(0_u64);
+    let huge_file_count_cell  = Cell::new(0_u64);
+    let huge_file_size_cell   = Cell::new(0_u64);
     walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| { // process file
         total_file_count_cell.replace(total_file_count_cell.get() + 1);
         let p_str = match p.to_str() {
@@ -92,7 +92,7 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
     let search_text = &options.search_text;
     let lines = content.lines();
     let mut match_lines_vec = vec![];
-    let mut line_no = 0usize;
+    let mut line_no = 0_usize;
     let the_search_text = &iff!(options.ignore_case, search_text.to_lowercase(), search_text.to_string());
     for ln in lines {
         if options.filter_large_line && ln.len() as u64 >= options.parsed_large_line_size {
