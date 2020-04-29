@@ -6,7 +6,7 @@ extern crate rust_util;
 mod opt;
 mod local_util;
 
-use std::{ cell::RefCell, path::Path, time::SystemTime, };
+use std::{ cell::Cell, path::Path, time::SystemTime, };
 use opt::*;
 use rust_util::{
     iff,
@@ -48,11 +48,11 @@ fn clear_n_print_message(mt: MessageType, message: &str) {
 }
 
 fn find_huge_files(options: &Options, dir_path: &Path) {
-    let total_file_count_cell = RefCell::new(0u64);
-    let huge_file_count_cell = RefCell::new(0u64);
-    let huge_file_size_cell = RefCell::new(0u64);
+    let total_file_count_cell = Cell::new(0_u64);
+    let huge_file_count_cell = Cell::new(0_u64);
+    let huge_file_size_cell = Cell::new(0_u64);
     walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| { // process file
-        total_file_count_cell.replace_with(|&mut c| c + 1);
+        total_file_count_cell.replace(total_file_count_cell.get() + 1);
         let p_str = match p.to_str() {
             Some(s) => s, None => return,
         };
@@ -63,8 +63,8 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
             Ok(metadata) => {
                 let len = metadata.len();
                 if len >= options.parsed_huge_file_size {
-                    huge_file_count_cell.replace_with(|&mut c| c + 1);
-                    huge_file_size_cell.replace_with(|&mut c| c + len);
+                    huge_file_count_cell.replace(huge_file_count_cell.get() + 1);
+                    huge_file_size_cell.replace(huge_file_size_cell.get() + 1);
                     clear_n_print_message(MessageType::OK, &format!("{} [{}]", p_str, get_display_size(len as i64)));
                 }
             },
@@ -147,13 +147,13 @@ fn find_text_files(options: &Options, dir_path: &Path) {
         ext if ext.is_empty() => vec![],
         ext => ext.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).map(|s| ".".to_owned() + s).collect(),
     };
-    let total_file_count_cell = RefCell::new(0u64);
-    let scaned_file_count_cell = RefCell::new(0u64);
-    let matched_file_count_cell = RefCell::new(0u64);
-    let total_dir_count_cell = RefCell::new(0u64);
-    let scaned_dir_count_cell = RefCell::new(0u64);
+    let total_file_count_cell   = Cell::new(0_u64);
+    let scaned_file_count_cell  = Cell::new(0_u64);
+    let matched_file_count_cell = Cell::new(0_u64);
+    let total_dir_count_cell    = Cell::new(0_u64);
+    let scaned_dir_count_cell   = Cell::new(0_u64);
     walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| { // process file
-        total_file_count_cell.replace_with(|&mut c| c + 1);
+        total_file_count_cell.replace(total_file_count_cell.get() + 1);
         let p_str = match p.to_str() {
             Some(s) => s, None => return,
         };
@@ -169,12 +169,12 @@ fn find_text_files(options: &Options, dir_path: &Path) {
                 return;
             },
         };
-        scaned_file_count_cell.replace_with(|&mut c| c + 1);
+        scaned_file_count_cell.replace(scaned_file_count_cell.get() + 1);
         if match_lines(p_str, &file_content, &options) {
-            matched_file_count_cell.replace_with(|&mut c| c + 1);
+            matched_file_count_cell.replace(matched_file_count_cell.get() + 1);
         }
     }, &|p| { // process path
-        total_dir_count_cell.replace_with(|&mut c| c + 1);
+        total_dir_count_cell.replace(total_dir_count_cell.get() + 1);
         let p_str = match p.to_str() {
             Some(s) => s, None => return false,
         };
@@ -194,7 +194,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
             if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str)); }
             return false;
         }
-        scaned_dir_count_cell.replace_with(|&mut c| c + 1);
+        scaned_dir_count_cell.replace(scaned_dir_count_cell.get() + 1);
         print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10));
         true
     }).ok();
