@@ -14,7 +14,7 @@ pub fn read_file_content<P: AsRef<Path>>(p: P, len_of_large_file: u64) -> XResul
         return Err(new_box_error(&format!("File is not a file: {:?}", file)));
     }
     let file_len = file.metadata()?.len();
-    if file_len > len_of_large_file {
+    if file_len >= len_of_large_file {
         return Err(new_box_error(&format!("File too large: {:?}, len: {}", file, file_len)));
     }
     let mut f = File::open(file)?;
