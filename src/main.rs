@@ -51,35 +51,35 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
     let total_file_count_cell = RefCell::new(0u64);
     let huge_file_count_cell = RefCell::new(0u64);
     let huge_file_size_cell = RefCell::new(0u64);
-    walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| {
+    walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| { // process file
         total_file_count_cell.replace_with(|&mut c| c + 1);
+        let p_str = match p.to_str() {
+            Some(s) => s, None => return,
+        };
         match p.metadata() {
             Err(err) => if options.verbose {
-                if let Some(p_str) = p.to_str() {
-                    clear_n_print_message(MessageType::WARN, &format!("Read file {} meta failed: {}", p_str, err));
-                }
+                clear_n_print_message(MessageType::WARN, &format!("Read file {} meta failed: {}", p_str, err));
             },
             Ok(metadata) => {
                 let len = metadata.len();
                 if len >= options.parsed_huge_file_size {
                     huge_file_count_cell.replace_with(|&mut c| c + 1);
                     huge_file_size_cell.replace_with(|&mut c| c + len);
-                    if let Some(p_str) = p.to_str() {
-                        clear_n_print_message(MessageType::OK, &format!("{} [{}]", p_str, get_display_size(len as i64)));
-                    }
+                    clear_n_print_message(MessageType::OK, &format!("{} [{}]", p_str, get_display_size(len as i64)));
                 }
             },
         }
-    }, &|p| {
-        if let Some(p_str) = p.to_str() {
-            if options.skip_link_dir && is_symlink(p) {
-                if options.verbose {
-                    clear_n_print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str));
-                }
-                return false;
+    }, &|p| { // process path
+        let p_str = match p.to_str() {
+            Some(s) => s, None => return false,
+        };
+        if options.skip_link_dir && is_symlink(p) {
+            if options.verbose {
+                clear_n_print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str));
             }
-            print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10));
+            return false;
         }
+        print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10));
         true
     }).ok();
     clear_n_print_message(MessageType::OK, &format!("Total file count: {}, huge file count: {}, total huge file size: {}",
@@ -152,7 +152,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
     let matched_file_count_cell = RefCell::new(0u64);
     let total_dir_count_cell = RefCell::new(0u64);
     let scaned_dir_count_cell = RefCell::new(0u64);
-    walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| {
+    walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| { // process file
         total_file_count_cell.replace_with(|&mut c| c + 1);
         let p_str = match p.to_str() {
             Some(s) => s, None => return,
@@ -173,28 +173,29 @@ fn find_text_files(options: &Options, dir_path: &Path) {
         if match_lines(p_str, &file_content, &options) {
             matched_file_count_cell.replace_with(|&mut c| c + 1);
         }
-    }, &|p| {
+    }, &|p| { // process path
         total_dir_count_cell.replace_with(|&mut c| c + 1);
-        if let Some(p_str) = p.to_str() {
-            if (!options.scan_dot_git_dir) && p_str.ends_with("/.git") {
-                if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip .git dir: {}", p_str)); }
-                return false;
-            }
-            if options.skip_target_dir && p_str.ends_with("/target") {
-                if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip target dir: {}", p_str)); }
-                return false;
-            }
-            if options.skip_dot_dir && p_str.contains("/.") {
-                if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip dot(.) dir: {}", p_str)); }
-                return false;
-            }
-            if options.skip_link_dir && is_symlink(p) {
-                if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str)); }
-                return false;
-            }
-            scaned_dir_count_cell.replace_with(|&mut c| c + 1);
-            print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10));
+        let p_str = match p.to_str() {
+            Some(s) => s, None => return false,
+        };
+        if (!options.scan_dot_git_dir) && p_str.ends_with("/.git") {
+            if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip .git dir: {}", p_str)); }
+            return false;
         }
+        if options.skip_target_dir && p_str.ends_with("/target") {
+            if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip target dir: {}", p_str)); }
+            return false;
+        }
+        if options.skip_dot_dir && p_str.contains("/.") {
+            if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip dot(.) dir: {}", p_str)); }
+            return false;
+        }
+        if options.skip_link_dir && is_symlink(p) {
+            if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str)); }
+            return false;
+        }
+        scaned_dir_count_cell.replace_with(|&mut c| c + 1);
+        print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10));
         true
     }).ok();
     print_lastline(EMPTY);
