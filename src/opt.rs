@@ -1,4 +1,4 @@
-use argparse::{ArgumentParser, StoreTrue, Store};
+use argparse::{ ArgumentParser, StoreTrue, Store, };
 use rust_util::{ XResult, util_size::*, };
 
 pub struct Options {

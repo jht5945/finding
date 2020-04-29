@@ -1,4 +1,4 @@
-use std:: {
+use std::{
     fs::File,
     path::Path,
     io::prelude::*,
