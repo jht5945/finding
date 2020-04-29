@@ -5,7 +5,7 @@ use std::{
 };
 use rust_util::{ XResult, new_box_error, };
 
-pub fn read_file_content<P: AsRef<Path>>(p: P, large_file_len: u64) -> XResult<String> {
+pub fn read_file_content<P: AsRef<Path>>(p: P, len_of_large_file: u64) -> XResult<String> {
     let file = p.as_ref();
     if !file.exists() {
         return Err(new_box_error(&format!("File not exists: {:?}", file)));
@@ -14,7 +14,7 @@ pub fn read_file_content<P: AsRef<Path>>(p: P, large_file_len: u64) -> XResult<S
         return Err(new_box_error(&format!("File is not a file: {:?}", file)));
     }
     let file_len = file.metadata()?.len();
-    if file_len > large_file_len {
+    if file_len > len_of_large_file {
         return Err(new_box_error(&format!("File too large: {:?}, len: {}", file, file_len)));
     }
     let mut f = File::open(file)?;
