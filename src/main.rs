@@ -51,8 +51,13 @@ impl CountCell {
     }
 
     #[inline]
+    fn add(&self, i: u64) {
+        self.cell.set(self.cell.get() + i);
+    }
+
+    #[inline]
     fn add_one(&self) {
-        self.cell.set(self.cell.get() + 1);
+        self.add(1);
     }
 }
 
@@ -86,7 +91,7 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
                 let len = metadata.len();
                 if len >= options.parsed_huge_file_size {
                     huge_file_count.add_one();
-                    huge_file_size.add_one();
+                    huge_file_size.add(len);
                     clear_n_print_message(MessageType::OK, &format!("{} [{}]", p_str, get_display_size(len as i64)));
                 }
             },
