@@ -6,7 +6,10 @@ extern crate rust_util;
 mod opt;
 mod local_util;
 
-use std::{ path::Path, time::SystemTime, };
+use std::{
+    path::Path,
+    time::{ Duration, SystemTime,},
+};
 use opt::*;
 use rust_util::{
     iff,
@@ -69,14 +72,15 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
         let p_str = match p.to_str() {
             Some(s) => s, None => return false,
         };
-        if options.skip_link_dir && is_symlink(p) {
+        let is_skip_link = options.skip_link_dir && is_symlink(p);
+        if is_skip_link {
             if options.verbose {
                 clear_n_print_message(MessageType::DEBUG, &format!("Skip link dir: {}", p_str));
             }
-            return false;
+        } else {
+            print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10));
         }
-        print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10));
-        true
+        !is_skip_link
     }).ok();
     clear_n_print_message(MessageType::OK, &format!("Total file count: {}, huge file count: {}, total huge file size: {}",
                                             total_file_count.get(),
@@ -218,7 +222,7 @@ fn main() -> XResult<()> {
         "text" => find_text_files(&options, &dir_path),
         others => return Err(new_box_error(&format!("Unknown command: {}", others))),
     }
-    let cost_millis = SystemTime::now().duration_since(start.clone()).unwrap().as_millis();
+    let cost_millis = SystemTime::now().duration_since(start.clone()).unwrap_or(Duration::from_millis(0)).as_millis();
     print_message(MessageType::OK, &format!("Finding finished, cost {} ms", cost_millis));
     Ok(())
 }
