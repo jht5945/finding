@@ -118,8 +118,8 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
                 println!("{}", match_line.line_string);
             } else {
                 let parts = match_line.line_string.split(search_text).collect::<Vec<_>>();
-                for (j, part) in parts.iter().enumerate() {
-                    if j != 0 {
+                for (i, part) in parts.iter().enumerate() {
+                    if i != 0 {
                         print_color(Some(term::color::RED), true, search_text);
                     }
                     print!("{}", part);
