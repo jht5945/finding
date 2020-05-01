@@ -61,12 +61,16 @@ impl CountCell {
     }
 }
 
-fn print_version() {
+fn print_version(options: &Options) {
     println!(r#"finding {} - {}
 Copyright (C) 2019-2020 Hatter Jiang.
 License MIT <https://opensource.org/licenses/MIT>
 
 Written by Hatter Jiang"#, VERSION, &GIT_HASH[0..7]);
+    if options.verbose {
+        print_message(MessageType::DEBUG, &format!("Version: {}", VERSION));
+        print_message(MessageType::DEBUG, &format!("Git hash: {}", GIT_HASH));
+    }
 }
 
 fn clear_n_print_message(mt: MessageType, message: &str) {
@@ -102,7 +106,7 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
         };
         if options.skip_link_dir && is_symlink(p) {
             if options.verbose {
-                clear_n_print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str));
+                clear_n_print_message(MessageType::DEBUG, &format!("Skip link dir: {}", p_str));
             }
             return false;
         }
@@ -124,7 +128,7 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
     for ln in lines {
         if options.filter_large_line && ln.len() as u64 >= options.parsed_large_line_size {
             if options.verbose {
-                clear_n_print_message(MessageType::INFO, &format!("Skip large line: {} bytes", ln.len()));
+                clear_n_print_message(MessageType::DEBUG, &format!("Skip large line: {} bytes", ln.len()));
             }
             continue;
         }
@@ -206,19 +210,19 @@ fn find_text_files(options: &Options, dir_path: &Path) {
             Some(s) => s, None => return false,
         };
         if (!options.scan_dot_git_dir) && p_str.ends_with("/.git") {
-            if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip .git dir: {}", p_str)); }
+            if options.verbose { clear_n_print_message(MessageType::DEBUG, &format!("Skip .git dir: {}", p_str)); }
             return false;
         }
         if options.skip_target_dir && p_str.ends_with("/target") {
-            if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip target dir: {}", p_str)); }
+            if options.verbose { clear_n_print_message(MessageType::DEBUG, &format!("Skip target dir: {}", p_str)); }
             return false;
         }
         if options.skip_dot_dir && p_str.contains("/.") {
-            if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip dot(.) dir: {}", p_str)); }
+            if options.verbose { clear_n_print_message(MessageType::DEBUG, &format!("Skip dot(.) dir: {}", p_str)); }
             return false;
         }
         if options.skip_link_dir && is_symlink(p) {
-            if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str)); }
+            if options.verbose { clear_n_print_message(MessageType::DEBUG, &format!("Skip link dir: {}", p_str)); }
             return false;
         }
         scaned_dir_count.add_one();
@@ -239,7 +243,7 @@ fn main() -> XResult<()> {
     let options = Options::new_and_parse_args()?;
     
     if options.version {
-        print_version();
+        print_version(&options);
         return Ok(());
     }
 
