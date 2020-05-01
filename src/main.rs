@@ -72,15 +72,15 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
         let p_str = match p.to_str() {
             Some(s) => s, None => return false,
         };
-        let is_skip_link = options.skip_link_dir && is_symlink(p);
-        if is_skip_link {
+        let is_skip_link_and_is_link = options.skip_link_dir && is_symlink(p);
+        if is_skip_link_and_is_link {
             if options.verbose {
                 clear_n_print_message(MessageType::DEBUG, &format!("Skip link dir: {}", p_str));
             }
         } else {
             print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10));
         }
-        !is_skip_link
+        !is_skip_link_and_is_link
     }).ok();
     clear_n_print_message(MessageType::OK, &format!("Total file count: {}, huge file count: {}, total huge file size: {}",
                                             total_file_count.get(),
