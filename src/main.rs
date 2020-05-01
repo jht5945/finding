@@ -92,7 +92,7 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
     for (line_no, ln) in lines.enumerate() {
         if options.filter_large_line && ln.len() as u64 >= options.parsed_large_line_size {
             if options.verbose {
-                clear_n_print_message(MessageType::DEBUG, &format!("Skip large line: {} bytes", ln.len()));
+                clear_n_print_message(MessageType::DEBUG, &format!("Skip large line: {} chars", ln.len()));
             }
             continue;
         }
@@ -106,9 +106,7 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
         }
     }
 
-    if match_lines_vec.is_empty() {
-        false
-    } else {
+    if !match_lines_vec.is_empty() {
         clear_n_print_message(MessageType::OK, &format!("Find in {}:", tag));
         for match_line in &match_lines_vec {
             print!("{}: ", match_line.line_number + 1);
@@ -125,8 +123,8 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
                 println!();
             }
         }
-        true
     }
+    !match_lines_vec.is_empty()
 }
 
 fn find_text_files(options: &Options, dir_path: &Path) {
