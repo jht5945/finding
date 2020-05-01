@@ -114,11 +114,11 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
                 println!("{}", match_line.line_string);
             } else {
                 let ss: Vec<&str> = match_line.line_string.split(search_text).collect();
-                for j in 0..ss.len() {
+                for (j, part) in ss.iter().enumerate() {
                     if j != 0 {
                         print_color(Some(term::color::RED), true, search_text);
                     }
-                    print!("{}", ss[j]);
+                    print!("{}", part);
                 }
                 println!();
             }
