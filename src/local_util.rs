@@ -1,9 +1,45 @@
 use std::{
+    cell::Cell,
     fs::File,
     path::Path,
     io::prelude::*,
 };
 use rust_util::{ XResult, new_box_error, };
+
+#[derive(Debug)]
+pub struct MatchLine {
+    pub line_number: usize,
+    pub line_string: String,
+}
+
+impl MatchLine {
+    pub fn new(line_number: usize, line_string: String) -> MatchLine {
+        MatchLine { line_number, line_string, }
+    }
+}
+
+pub struct CountCell( Cell<u64> );
+
+impl CountCell {
+    pub fn new() -> CountCell {
+        CountCell( Cell::new(0_u64) )
+    }
+
+    #[inline]
+    pub fn get(&self) -> u64 {
+        self.0.get()
+    }
+
+    #[inline]
+    pub fn add(&self, i: u64) {
+        self.0.set(self.0.get() + i);
+    }
+
+    #[inline]
+    pub fn add_one(&self) {
+        self.add(1);
+    }
+}
 
 pub fn read_file_content<P: AsRef<Path>>(p: P, len_of_large_file: u64) -> XResult<String> {
     let file = p.as_ref();

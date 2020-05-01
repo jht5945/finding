@@ -6,7 +6,7 @@ extern crate rust_util;
 mod opt;
 mod local_util;
 
-use std::{ cell::Cell, path::Path, time::SystemTime, };
+use std::{ path::Path, time::SystemTime, };
 use opt::*;
 use rust_util::{
     iff,
@@ -16,50 +16,15 @@ use rust_util::{
     util_size::*,
     util_msg::*,
 };
-use local_util::read_file_content;
+use local_util::{
+    CountCell,
+    MatchLine,
+    read_file_content,
+};
 
 const EMPTY: &str = "";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const GIT_HASH: &str = env!("GIT_HASH");
-
-#[derive(Debug)]
-struct MatchLine {
-    line_number: usize,
-    line_string: String,
-}
-
-impl MatchLine {
-    fn new(line_number: usize, line_string: String) -> MatchLine {
-        MatchLine { line_number, line_string, }
-    }
-}
-
-struct CountCell {
-    cell: Cell<u64>
-}
-
-impl CountCell {
-    fn new() -> CountCell {
-        CountCell {
-            cell: Cell::new(0_u64)
-        }
-    }
-
-    #[inline]
-    fn get(&self) -> u64 {
-        self.cell.get()
-    }
-
-    #[inline]
-    fn add(&self, i: u64) {
-        self.cell.set(self.cell.get() + i);
-    }
-
-    #[inline]
-    fn add_one(&self) {
-        self.add(1);
-    }
-}
 
 fn print_version(options: &Options) {
     println!(r#"finding {} - {}
