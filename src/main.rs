@@ -115,10 +115,10 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
             } else {
                 let ss: Vec<&str> = match_line.line_string.split(search_text).collect();
                 for j in 0..ss.len() {
-                    print!("{}", ss[j]);
-                    if j < ss.len() - 1 {
+                    if j != 0 {
                         print_color(Some(term::color::RED), true, search_text);
                     }
+                    print!("{}", ss[j]);
                 }
                 println!();
             }
