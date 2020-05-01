@@ -34,6 +34,28 @@ impl MatchLine {
     }
 }
 
+struct CountCell {
+    cell: Cell<u64>
+}
+
+impl CountCell {
+    fn new() -> CountCell {
+        CountCell {
+            cell: Cell::new(0_u64)
+        }
+    }
+
+    #[inline]
+    fn get(&self) -> u64 {
+        self.cell.get()
+    }
+
+    #[inline]
+    fn add_one(&self) {
+        self.cell.set(self.cell.get() + 1);
+    }
+}
+
 fn print_version() {
     println!(r#"finding {} - {}
 Copyright (C) 2019-2020 Hatter Jiang.
@@ -48,11 +70,11 @@ fn clear_n_print_message(mt: MessageType, message: &str) {
 }
 
 fn find_huge_files(options: &Options, dir_path: &Path) {
-    let total_file_count_cell = Cell::new(0_u64);
-    let huge_file_count_cell  = Cell::new(0_u64);
-    let huge_file_size_cell   = Cell::new(0_u64);
+    let total_file_count = CountCell::new();
+    let huge_file_count  = CountCell::new();
+    let huge_file_size   = CountCell::new();
     walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| { // process file
-        total_file_count_cell.replace(total_file_count_cell.get() + 1);
+        total_file_count.add_one();
         let p_str = match p.to_str() {
             Some(s) => s, None => return,
         };
@@ -63,8 +85,8 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
             Ok(metadata) => {
                 let len = metadata.len();
                 if len >= options.parsed_huge_file_size {
-                    huge_file_count_cell.replace(huge_file_count_cell.get() + 1);
-                    huge_file_size_cell.replace(huge_file_size_cell.get() + 1);
+                    huge_file_count.add_one();
+                    huge_file_size.add_one();
                     clear_n_print_message(MessageType::OK, &format!("{} [{}]", p_str, get_display_size(len as i64)));
                 }
             },
@@ -83,9 +105,9 @@ fn find_huge_files(options: &Options, dir_path: &Path) {
         true
     }).ok();
     clear_n_print_message(MessageType::OK, &format!("Total file count: {}, huge file count: {}, total huge file size: {}",
-                                            total_file_count_cell.into_inner(),
-                                            huge_file_count_cell.into_inner(),
-                                            get_display_size(huge_file_size_cell.into_inner() as i64)));
+                                            total_file_count.get(),
+                                            huge_file_count.get(),
+                                            get_display_size(huge_file_size.get() as i64)));
 }
 
 fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
@@ -147,13 +169,13 @@ fn find_text_files(options: &Options, dir_path: &Path) {
         ext if ext.is_empty() => vec![],
         ext => ext.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).map(|s| ".".to_owned() + s).collect(),
     };
-    let total_file_count_cell   = Cell::new(0_u64);
-    let scaned_file_count_cell  = Cell::new(0_u64);
-    let matched_file_count_cell = Cell::new(0_u64);
-    let total_dir_count_cell    = Cell::new(0_u64);
-    let scaned_dir_count_cell   = Cell::new(0_u64);
+    let total_file_count   = CountCell::new();
+    let scaned_file_count  = CountCell::new();
+    let matched_file_count = CountCell::new();
+    let total_dir_count    = CountCell::new();
+    let scaned_dir_count   = CountCell::new();
     walk_dir(&dir_path, &|_, _| (/* do not process error */), &|p| { // process file
-        total_file_count_cell.replace(total_file_count_cell.get() + 1);
+        total_file_count.add_one();
         let p_str = match p.to_str() {
             Some(s) => s, None => return,
         };
@@ -169,12 +191,12 @@ fn find_text_files(options: &Options, dir_path: &Path) {
                 return;
             },
         };
-        scaned_file_count_cell.replace(scaned_file_count_cell.get() + 1);
+        scaned_file_count.add_one();
         if match_lines(p_str, &file_content, &options) {
-            matched_file_count_cell.replace(matched_file_count_cell.get() + 1);
+            matched_file_count.add_one();
         }
     }, &|p| { // process path
-        total_dir_count_cell.replace(total_dir_count_cell.get() + 1);
+        total_dir_count.add_one();
         let p_str = match p.to_str() {
             Some(s) => s, None => return false,
         };
@@ -194,18 +216,18 @@ fn find_text_files(options: &Options, dir_path: &Path) {
             if options.verbose { clear_n_print_message(MessageType::INFO, &format!("Skip link dir: {}", p_str)); }
             return false;
         }
-        scaned_dir_count_cell.replace(scaned_dir_count_cell.get() + 1);
+        scaned_dir_count.add_one();
         print_lastline(&get_term_width_message(&format!("Scanning: {}", p_str), 10));
         true
     }).ok();
     print_lastline(EMPTY);
     print_message(MessageType::OK, &format!("Total dir count: {}, scaned dir count: {}",
-                                    total_dir_count_cell.into_inner(),
-                                    scaned_dir_count_cell.into_inner()));
+                                    total_dir_count.get(),
+                                    scaned_dir_count.get()));
     print_message(MessageType::OK, &format!("Total file count: {}, scaned file count: {}, matched file count: {}",
-                                    total_file_count_cell.into_inner(),
-                                    scaned_file_count_cell.into_inner(),
-                                    matched_file_count_cell.into_inner()));
+                                    total_file_count.get(),
+                                    scaned_file_count.get(),
+                                    matched_file_count.get()));
 }
 
 fn main() -> XResult<()> {
