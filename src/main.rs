@@ -88,9 +88,8 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
     let search_text = &options.search_text;
     let lines = content.lines();
     let mut match_lines_vec = vec![];
-    let mut line_no = 0_usize;
     let the_search_text = &iff!(options.ignore_case, search_text.to_lowercase(), search_text.to_string());
-    for ln in lines {
+    for (line_no, ln) in lines.enumerate() {
         if options.filter_large_line && ln.len() as u64 >= options.parsed_large_line_size {
             if options.verbose {
                 clear_n_print_message(MessageType::DEBUG, &format!("Skip large line: {} bytes", ln.len()));
@@ -105,7 +104,6 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
         if matches && matches_line_content {
             match_lines_vec.push(MatchLine::new(line_no, ln.to_string()));
         }
-        line_no += 1;
     }
 
     if match_lines_vec.is_empty() {
