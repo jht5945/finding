@@ -113,8 +113,8 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
             if options.ignore_case {
                 println!("{}", match_line.line_string);
             } else {
-                let ss: Vec<&str> = match_line.line_string.split(search_text).collect();
-                for (j, part) in ss.iter().enumerate() {
+                let parts = match_line.line_string.split(search_text).collect::<Vec<_>>();
+                for (j, part) in parts.iter().enumerate() {
                     if j != 0 {
                         print_color(Some(term::color::RED), true, search_text);
                     }
