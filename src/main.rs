@@ -1,6 +1,7 @@
 extern crate argparse;
 extern crate term;
 extern crate term_size;
+#[macro_use]
 extern crate rust_util;
 
 mod opt;
@@ -8,22 +9,23 @@ mod local_util;
 
 use std::{
     path::Path,
-    time::{ Duration, SystemTime,},
+    time::{ Duration, SystemTime },
 };
 use opt::*;
 use rust_util::{
-    iff,
     XResult,
     new_box_error,
     util_file::*,
     util_size::*,
-    util_msg::*,
 };
-use local_util::{
-    CountCell,
-    MatchLine,
-    read_file_content,
+use rust_util::util_msg::{
+    MessageType,
+    print_color,
+    print_lastline,
+    print_message,
+    get_term_width_message,
 };
+use local_util::{ CountCell, MatchLine, read_file_content };
 
 const EMPTY: &str = "";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -36,8 +38,8 @@ License MIT <https://opensource.org/licenses/MIT>
 
 Written by Hatter Jiang"#, VERSION, &GIT_HASH[0..7]);
     if options.verbose {
-        print_message(MessageType::DEBUG, &format!("Version: {}", VERSION));
-        print_message(MessageType::DEBUG, &format!("Git hash: {}", GIT_HASH));
+        debugging!("Version: {}", VERSION);
+        debugging!("Git hash: {}", GIT_HASH);
     }
 }
 
@@ -133,11 +135,11 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
 
 fn find_text_files(options: &Options, dir_path: &Path) {
     if options.search_text.is_empty() {
-        print_message(MessageType::ERROR, "Param search_text cannot be empty.");
+        failure!("Param search_text cannot be empty.");
         return;
     }
     if options.ignore_case {
-        print_message(MessageType::WARN, "Using ignore case mode, highlight print is disabled.");
+        warning!("Using ignore case mode, highlight print is disabled.");
     }
     let file_exts = match &options.file_ext {
         ext if ext.is_empty() => vec![],
@@ -195,13 +197,13 @@ fn find_text_files(options: &Options, dir_path: &Path) {
         true
     }).ok();
     print_lastline(EMPTY);
-    print_message(MessageType::OK, &format!("Total dir count: {}, scaned dir count: {}",
-                                    total_dir_count.get(),
-                                    scaned_dir_count.get()));
-    print_message(MessageType::OK, &format!("Total file count: {}, scaned file count: {}, matched file count: {}",
-                                    total_file_count.get(),
-                                    scaned_file_count.get(),
-                                    matched_file_count.get()));
+    success!("Total dir count: {}, scaned dir count: {}",
+            total_dir_count.get(),
+            scaned_dir_count.get());
+    success!("Total file count: {}, scaned file count: {}, matched file count: {}",
+            total_file_count.get(),
+            scaned_file_count.get(),
+            matched_file_count.get());
 }
 
 fn main() -> XResult<()> {
@@ -222,7 +224,7 @@ fn main() -> XResult<()> {
         "text" => find_text_files(&options, &dir_path),
         others => return Err(new_box_error(&format!("Unknown command: {}", others))),
     }
-    let cost_millis = SystemTime::now().duration_since(start.clone()).unwrap_or(Duration::from_millis(0)).as_millis();
-    print_message(MessageType::OK, &format!("Finding finished, cost {} ms", cost_millis));
+    let cost_millis = SystemTime::now().duration_since(start).unwrap_or_else(|_| Duration::from_millis(0)).as_millis();
+    success!("Finding finished, cost {} ms", cost_millis);
     Ok(())
 }
