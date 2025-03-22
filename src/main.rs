@@ -18,13 +18,7 @@ use rust_util::{
     util_file::*,
     util_size::*,
 };
-use rust_util::util_msg::{
-    MessageType,
-    print_color,
-    print_lastline,
-    print_message,
-    get_term_width_message,
-};
+use rust_util::util_msg::{MessageType, print_lastline, print_message, get_term_width_message, print_color_and_flush};
 use local_util::{ CountCell, MatchLine, read_file_content };
 
 const EMPTY: &str = "";
@@ -122,7 +116,7 @@ fn match_lines(tag: &str, content: &str, options: &Options) -> bool {
                 let parts = match_line.line_string.split(search_text).collect::<Vec<_>>();
                 for (i, part) in parts.iter().enumerate() {
                     if i != 0 {
-                        print_color(Some(term::color::RED), true, search_text);
+                        print_color_and_flush( Some(term::color::RED), true, search_text);
                     }
                     print!("{}", part);
                 }
@@ -208,7 +202,7 @@ fn find_text_files(options: &Options, dir_path: &Path) {
 
 fn main() -> XResult<()> {
     let options = Options::new_and_parse_args()?;
-    
+
     if options.version {
         print_version(&options);
         return Ok(());
